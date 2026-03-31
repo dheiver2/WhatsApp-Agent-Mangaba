@@ -82,7 +82,7 @@ async def handle_message(msg: IncomingMessage) -> OutgoingMessage:
 
     try:
         async with conversation_lock(phone):
-            reply = await agent.process_message(
+            result = await agent.process_message(
                 phone=phone,
                 name=msg.name,
                 text=msg.text,
@@ -92,4 +92,8 @@ async def handle_message(msg: IncomingMessage) -> OutgoingMessage:
         await release_message_processing(phone, msg.message_id)
         raise
 
-    return OutgoingMessage(reply=reply)
+    return OutgoingMessage(
+        reply=result["reply"],
+        stage=result.get("stage", ""),
+        intent=result.get("intent", ""),
+    )

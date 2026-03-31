@@ -150,8 +150,8 @@ class AttendantAgent:
 
     async def process_message(
         self, phone: str, name: str, text: str
-    ) -> str:
-        """Process an incoming message and return the response."""
+    ) -> dict:
+        """Process an incoming message and return the response with metadata."""
         # 1. Load user state
         profile = await get_user_profile(phone)
         if name and not profile.get("name"):
@@ -256,7 +256,7 @@ class AttendantAgent:
         await set_stage(phone, new_stage)
         await add_to_history(phone, "assistant", response)
 
-        return response
+        return {"reply": response, "stage": new_stage, "intent": intent}
 
     def _build_scheduling_context(self, dt_info: DateTimeInfo | None) -> str:
         """Build scheduling context string for the LLM based on detected datetime."""
@@ -383,6 +383,16 @@ class AttendantAgent:
                 f"- É primeiro contato: abra com saudação contextual ({self._time_based_greeting()}) "
                 "e apresentação curta do escritório."
             )
+            parts.append(
+                "- REGRA OBRIGATÓRIA NO PRIMEIRO CONTATO: NÃO faça perguntas de qualificação (valor, operadora, tipo de plano) nesta mensagem. "
+                "Apenas se apresente, acolha o lead e diga que vai fazer algumas perguntas para entender melhor a situação. "
+                "Exemplo: 'Vou te fazer algumas perguntas rápidas para entender melhor o seu caso e te direcionar da melhor forma.'"
+            )
+        elif len(history) <= 2:
+            parts.append(
+                "- Segundo contato: agora inicie a qualificação. Pergunte no máximo 2 dados (ex: valor antes/depois e operadora). "
+                "NÃO ofereça consulta ainda — foque apenas em coletar informações."
+            )
         else:
             parts.append("- Já existe histórico: não repita a apresentação do escritório nem o pitch inicial.")
 
@@ -425,7 +435,11 @@ class AttendantAgent:
         if current_stage in {"oferta_consulta", "tratamento_objecao", "agendamento"}:
             parts.append("- Se fizer sentido, conduza para consulta/análise e use CTA de agendamento.")
         elif not self._has_minimum_qualification(profile):
-            parts.append("- Ainda faltam dados importantes. Não envie link de agendamento nesta resposta.")
+            parts.append(
+                "- BLOQUEIO DE AGENDAMENTO: Ainda faltam dados obrigatórios para avançar. "
+                "NÃO mencione consulta, análise gratuita, Dr. Filipe ou agendamento nesta resposta. "
+                "Foque APENAS em coletar os dados faltantes de forma natural e empática."
+            )
 
         if slot_suggestions:
             parts.append(
@@ -437,8 +451,9 @@ class AttendantAgent:
             parts.append("- Evite pedir todos os dados de uma vez. Priorize no máximo dois.")
         if intent == "scheduling" and not self._has_minimum_qualification(profile):
             parts.append(
-                "- O lead quer agendar, mas ainda faltam dados mínimos. Reconheça o interesse e "
-                "peça apenas o próximo dado essencial antes de falar em horários."
+                "- O lead quer agendar, mas ainda faltam dados mínimos. Reconheça o interesse mas "
+                "NÃO fale em horários, consulta ou agendamento. Peça apenas o próximo dado essencial. "
+                "Diga algo como: 'Ótimo que você queira avançar! Antes, preciso entender melhor seu caso.'"
             )
         if intent == "scheduling" and dt_info and dt_info.is_valid and dt_info.is_business_hours:
             parts.append(
