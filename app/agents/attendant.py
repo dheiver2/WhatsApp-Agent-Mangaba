@@ -83,7 +83,10 @@ SOFTENING_REPLACEMENTS = (
     (r"\bprecisamos marcar uma consulta rápida\b", "o próximo passo pode ser uma consulta rápida"),
     (r"\bna minha experiência, planos desse período têm boas chances de revisão\b", "em muitos casos, planos desse período merecem uma análise cuidadosa"),
     (r"\btem boas chances de revisão\b", "merece uma análise cuidadosa"),
+    (r"\bestá muito acima da média\b", "merece uma análise cuidadosa"),
     (r"\bcomo podemos buscar uma redução desse valor\b", "quais caminhos podem ser analisados no seu caso"),
+    (r"\bte mostrar quanto pode ser reduzido\b", "te explicar quais caminhos podem fazer sentido"),
+    (r"\bquanto desse aumento pode ser revertido\b", "quais caminhos podem fazer sentido para analisar esse aumento"),
     (r"\bverificar se esse reajuste foi abusivo\b", "verificar se esse reajuste pode ser questionado"),
     (r"\btem grande potencial de redução\b", "merece uma análise cuidadosa"),
     (r"\btem ótimas chances de reverter esse valor\b", "tem bons elementos para análise"),
@@ -158,6 +161,7 @@ class AttendantAgent:
 
         # 2. Classify intent and extract data
         intent = self.router.classify_intent(text)
+        objection_type = self.router.detect_objection_type(text)
         qual_data = self.router.extract_qualification_data(text)
 
         # 3. Extract date/time from message
@@ -220,7 +224,15 @@ class AttendantAgent:
         )
 
         allow_scheduling_link = self._should_offer_scheduling_link(profile, new_stage)
-        if intent == "scheduling" and allow_scheduling_link and self._is_out_of_hours_request(dt_info):
+        if (
+            new_stage == "oferta_consulta"
+            and current_stage in {"abordagem_inicial", "qualificacao"}
+            and self._has_minimum_qualification(profile)
+        ):
+            response = f"{self._build_offer_consulta_response(profile.get('name', ''), profile, slot_suggestions)}\n\n[AGENDAR]"
+        elif intent == "objection" and objection_type == "cancellation_fear" and allow_scheduling_link:
+            response = self._build_cancellation_fear_response(profile.get("name", ""), slot_suggestions)
+        elif intent == "scheduling" and allow_scheduling_link and self._is_out_of_hours_request(dt_info):
             response = self._build_out_of_hours_response(profile.get("name", ""), slot_suggestions)
         elif intent == "scheduling" and allow_scheduling_link and dt_info and dt_info.is_valid and dt_info.is_business_hours:
             response = self._build_in_hours_scheduling_response(profile.get("name", ""), dt_info)
@@ -562,6 +574,67 @@ class AttendantAgent:
             f"Para confirmar a consulta, selecione {selected} no link abaixo. "
             "Se esse horário não aparecer disponível, escolha a opção mais próxima."
         )
+
+    def _build_offer_consulta_response(
+        self,
+        name: str,
+        profile: dict,
+        slot_suggestions: list[str],
+    ) -> str:
+        prefix = f"{name}, " if name else ""
+        operadora = profile.get("operadora", "seu plano")
+        tipo_plano = profile.get("tipo_plano", "plano")
+        valor_antes = self._format_currency_value(profile.get("valor_antes"))
+        valor_depois = self._format_currency_value(profile.get("valor_depois"))
+        ano = profile.get("ano_contratacao")
+
+        context_bits = [f"{tipo_plano} da {operadora}"]
+        if valor_antes and valor_depois:
+            context_bits.append(f"que passou de {valor_antes} para {valor_depois}")
+        if ano:
+            context_bits.append(f"contratado em {ano}")
+        context = ", ".join(context_bits)
+
+        if len(slot_suggestions) >= 2:
+            return (
+                f"{prefix}com base no que você me contou sobre o {context}, esse reajuste merece "
+                "uma análise cuidadosa.\n\n"
+                "Na consulta, o Dr. Filipe pode verificar se esse aumento pode ser questionado "
+                "e quais caminhos podem fazer sentido no seu caso.\n\n"
+                f"Quer que eu te envie {slot_suggestions[0]} ou {slot_suggestions[1]}?"
+            )
+
+        return (
+            f"{prefix}com base no que você me contou sobre o {context}, esse reajuste merece "
+            "uma análise cuidadosa.\n\n"
+            "Na consulta, o Dr. Filipe pode verificar se esse aumento pode ser questionado "
+            "e quais caminhos podem fazer sentido no seu caso."
+        )
+
+    def _build_cancellation_fear_response(self, name: str, slot_suggestions: list[str]) -> str:
+        prefix = f"{name}, " if name else ""
+        if len(slot_suggestions) >= 2:
+            return (
+                f"{prefix}esse receio é comum, e o mais prudente é analisar o caso antes de qualquer medida.\n\n"
+                "Na consulta, o Dr. Filipe pode explicar quais caminhos costumam ser usados para "
+                "preservar o contrato e reduzir riscos durante a discussão do reajuste.\n\n"
+                f"Quer que eu te envie {slot_suggestions[0]} ou {slot_suggestions[1]}?"
+            )
+        return (
+            f"{prefix}esse receio é comum, e o mais prudente é analisar o caso antes de qualquer medida.\n\n"
+            "Na consulta, o Dr. Filipe pode explicar quais caminhos costumam ser usados para "
+            "preservar o contrato e reduzir riscos durante a discussão do reajuste."
+        )
+
+    def _format_currency_value(self, value: str | None) -> str | None:
+        if not value:
+            return None
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError):
+            return None
+        formatted = f"{numeric:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        return f"R${formatted}"
 
     def _ensure_slot_options(self, response: str, slot_suggestions: list[str]) -> str:
         if len(slot_suggestions) < 2 or self._response_has_slot_options(response):
