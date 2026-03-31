@@ -375,6 +375,13 @@ class IntentRouter:
         # Extract monetary values
         money = []
         money.extend(re.findall(r"R\$\s*([\d\.,]+)", text))
+        paired_values = re.findall(
+            r"\b(?:era|era de|foi de|subiu de|passou de|saiu de)\s*"
+            r"(?:r\$\s*)?([\d\.,]+)\s*(?:para|pra)\s*(?:r\$\s*)?([\d\.,]+)\b",
+            text_lower,
+        )
+        for before, after in paired_values:
+            money.extend((before, after))
         payment_context_terms = ["pagava", "pago", "paguei", "ficou", "foi para", "subiu para", "aumento", "reajuste", "mensalidade", "valor"]
         money.extend(
             re.findall(

@@ -54,6 +54,14 @@ SOFTENING_REPLACEMENTS = (
         "a análise busca avaliar medidas para preservar seu contrato e reduzir riscos durante a discussão",
     ),
     (
+        r"\ba ação jurídica serve justamente para proteger seu contrato\b",
+        "a análise jurídica busca avaliar medidas para preservar seu contrato",
+    ),
+    (
+        r"\ba ação judicial justamente busca proteger seu contrato\b",
+        "a análise jurídica busca avaliar medidas para preservar seu contrato",
+    ),
+    (
         r"\ba ação serve justamente para proteger seu contrato\b",
         "a análise busca avaliar medidas para preservar seu contrato",
     ),
@@ -61,11 +69,22 @@ SOFTENING_REPLACEMENTS = (
         r"\ba maioria das decisões judiciais até proíbe a operadora de cancelar o plano durante o processo\b",
         "em muitos casos, existem medidas que ajudam a reduzir esse risco enquanto a situação é analisada",
     ),
+    (
+        r"\bsem colocar o contrato em risco\b",
+        "buscando reduzir riscos ao contrato",
+    ),
+    (
+        r"\bprotegem seu contrato e reduzem riscos\b",
+        "podem ajudar a preservar seu contrato e reduzir riscos",
+    ),
     (r"\bcom certeza podemos ajudar a reverter\b", "podemos analisar com cuidado"),
     (r"\bcom certeza podemos ajudar\b", "podemos avaliar o cenário com cuidado"),
     (r"\bcom certeza\b", "ao que tudo indica"),
     (r"\bprecisamos marcar uma consulta rápida\b", "o próximo passo pode ser uma consulta rápida"),
+    (r"\bna minha experiência, planos desse período têm boas chances de revisão\b", "em muitos casos, planos desse período merecem uma análise cuidadosa"),
+    (r"\btem boas chances de revisão\b", "merece uma análise cuidadosa"),
     (r"\bcomo podemos buscar uma redução desse valor\b", "quais caminhos podem ser analisados no seu caso"),
+    (r"\bverificar se esse reajuste foi abusivo\b", "verificar se esse reajuste pode ser questionado"),
     (r"\btem grande potencial de redução\b", "merece uma análise cuidadosa"),
     (r"\btem ótimas chances de reverter esse valor\b", "tem bons elementos para análise"),
     (r"\btem ótimas chances\b", "tem bons indícios"),
@@ -73,9 +92,44 @@ SOFTENING_REPLACEMENTS = (
     (r"\bmelhor estratégia para reverter esse aumento\b", "melhor forma de analisar esse aumento"),
     (r"\bmelhor estratégia para questionar esse aumento\b", "melhor forma de analisar esse aumento"),
     (r"\bmelhor estratégia\b", "melhor caminho"),
+    (r"\bavaliar as melhores estratégias para\b", "avaliar com calma caminhos possíveis, como"),
+    (r"\breduzir o valor do plano\b", "ver se o reajuste pode ser revisto"),
+    (r"\bpreservar sua cobertura\b", "entender os cuidados com a cobertura"),
+    (r"\bmantenham a cobertura ativa\b", "ajudem a preservar a cobertura"),
+    (r"\bevitem qualquer risco de cancelamento\b", "reduzam riscos durante a discussão"),
+    (r"\bgarantam seus direitos\b", "busquem resguardar seus direitos"),
+    (r"\bgarantir que tudo seja feito dentro da legalidade\b", "conduzir tudo com segurança jurídica"),
     (
         r"\bcomo proteger seu plano enquanto busca a revisão desse aumento\b",
         "os cuidados com o contrato enquanto esse aumento é analisado",
+    ),
+    (
+        r"\bsem prejudicar a continuidade do plano\b",
+        "considerando os cuidados com a continuidade do plano",
+    ),
+    (
+        r"\bquer que eu reserve um horário\b",
+        "Quer que eu te envie um horário disponível",
+    ),
+    (
+        r"\bexatamente como isso funciona na prática\b",
+        "com calma como isso pode funcionar no seu caso",
+    ),
+    (
+        r"\bposso reservar um horário para você hoje mesmo\b",
+        "posso te enviar um horário disponível hoje mesmo",
+    ),
+    (
+        r"\bsem prejudicar seu plano\b",
+        "com os cuidados adequados para o seu plano",
+    ),
+    (
+        r"\bnormalmente, quando entramos com o pedido, solicitamos também medidas preventivas para evitar qualquer risco de cancelamento enquanto o caso é analisado\b",
+        "quando necessário, a equipe avalia medidas para reduzir riscos enquanto o caso é analisado",
+    ),
+    (
+        r"\bcomo podemos agir com segurança\b",
+        "quais caminhos podem fazer sentido no seu caso",
     ),
     (r"\bvalor acima do justo\b", "valor que pode merecer revisão"),
     (r"\breverter esse valor\b", "questionar esse reajuste"),
@@ -177,14 +231,11 @@ class AttendantAgent:
             if allow_scheduling_link:
                 nome = profile.get("name", "")
                 response = self._ensure_slot_options(response, slot_suggestions)
-                if "oncehub.com" not in response.lower():
-                    response = f"{response}\n\n{get_scheduling_message(nome)}"
+                response = self._append_scheduling_message(response, nome)
         elif intent == "scheduling" and new_stage == "agendamento" and allow_scheduling_link:
             nome = profile.get("name", "")
             response = self._ensure_slot_options(response, slot_suggestions)
-            # Only add link if not already present in response
-            if "oncehub.com" not in response.lower():
-                response = f"{response}\n\n{get_scheduling_message(nome)}"
+            response = self._append_scheduling_message(response, nome)
 
         response = self._normalize_response(response)
 
@@ -519,6 +570,32 @@ class AttendantAgent:
             f"{response}\n\n"
             f"Posso te sugerir estes horários: {slot_suggestions[0]} ou {slot_suggestions[1]}?"
         )
+
+    def _append_scheduling_message(self, response: str, name: str) -> str:
+        cleaned = re.sub(
+            r"\(?https?://(?:www\.)?oncehub\.com/[^\s)]+\)?",
+            "",
+            response,
+            flags=re.IGNORECASE,
+        )
+
+        cleaned_lines: list[str] = []
+        for line in cleaned.splitlines():
+            stripped = line.strip()
+            lowered = stripped.lower()
+            if not stripped:
+                cleaned_lines.append("")
+                continue
+            if "pode clicar no link" in lowered:
+                continue
+            cleaned_lines.append(line)
+
+        cleaned_response = "\n".join(cleaned_lines)
+        cleaned_response = re.sub(r"\n{3,}", "\n\n", cleaned_response).strip()
+        scheduling_message = get_scheduling_message(name)
+        if not cleaned_response:
+            return scheduling_message
+        return f"{cleaned_response}\n\n{scheduling_message}"
 
     def _response_has_slot_options(self, response: str) -> bool:
         normalized_times = self._extract_time_mentions(response)
