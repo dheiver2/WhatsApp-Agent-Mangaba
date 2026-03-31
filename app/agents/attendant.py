@@ -101,6 +101,7 @@ class AttendantAgent:
             profile=profile,
             history=history,
             intent=intent,
+            dt_info=dt_info,
             current_stage=new_stage,
             missing_fields=missing_fields,
             recently_requested_fields=recently_requested_fields,
@@ -128,6 +129,8 @@ class AttendantAgent:
         allow_scheduling_link = self._should_offer_scheduling_link(profile, new_stage)
         if intent == "scheduling" and allow_scheduling_link and self._is_out_of_hours_request(dt_info):
             response = self._build_out_of_hours_response(profile.get("name", ""), slot_suggestions)
+        elif intent == "scheduling" and allow_scheduling_link and dt_info and dt_info.is_valid and dt_info.is_business_hours:
+            response = self._build_in_hours_scheduling_response(profile.get("name", ""), dt_info)
 
         # 9. Handle scheduling trigger — append booking link
         if "[AGENDAR]" in response:
@@ -249,6 +252,7 @@ class AttendantAgent:
         profile: dict,
         history: list[dict],
         intent: str,
+        dt_info: DateTimeInfo | None,
         current_stage: str,
         missing_fields: list[str],
         recently_requested_fields: list[str],
@@ -328,6 +332,11 @@ class AttendantAgent:
             parts.append(
                 "- O lead quer agendar, mas ainda faltam dados mínimos. Reconheça o interesse e "
                 "peça apenas o próximo dado essencial antes de falar em horários."
+            )
+        if intent == "scheduling" and dt_info and dt_info.is_valid and dt_info.is_business_hours:
+            parts.append(
+                "- Se o lead escolheu um horário válido, não diga que já reservou, bloqueou, "
+                "confirmou ou enviou detalhes. Oriente apenas a confirmar esse horário no link."
             )
 
         return "\n".join(parts)
@@ -450,6 +459,15 @@ class AttendantAgent:
             f"sexta, das {BUSINESS_HOUR_START:02d}h às {BUSINESS_HOUR_END:02d}h."
         )
 
+    def _build_in_hours_scheduling_response(self, name: str, dt_info: DateTimeInfo) -> str:
+        prefix = f"{name}, " if name else ""
+        selected = dt_info.format_display()
+        return (
+            f"{prefix}esse horário está dentro do nosso atendimento.\n\n"
+            f"Para confirmar a consulta, selecione {selected} no link abaixo. "
+            "Se esse horário não aparecer disponível, escolha a opção mais próxima."
+        )
+
     def _ensure_slot_options(self, response: str, slot_suggestions: list[str]) -> str:
         if len(slot_suggestions) < 2 or self._response_has_slot_options(response):
             return response
@@ -459,10 +477,22 @@ class AttendantAgent:
         )
 
     def _response_has_slot_options(self, response: str) -> bool:
-        has_time = re.search(r"\bàs\s+\d{1,2}[:h]?\d{0,2}\b", response.lower())
+        normalized_times = self._extract_time_mentions(response)
         has_date = re.search(r"\b\d{1,2}/\d{1,2}\b", response)
         has_weekday = any(day in response.lower() for day in WEEKDAYS_PT)
-        return bool(has_time and (has_date or has_weekday))
+        if len(normalized_times) >= 2:
+            return True
+        return bool(normalized_times and (has_date or has_weekday))
+
+    def _extract_time_mentions(self, response: str) -> set[str]:
+        matches = re.findall(
+            r"\b\d{1,2}:\d{2}\b|\b\d{1,2}h(?:\d{2})?\b|\bàs\s+\d{1,2}(?::\d{2})?\b",
+            response.lower(),
+        )
+        normalized = set()
+        for match in matches:
+            normalized.add(match.replace("às", "").strip())
+        return normalized
 
     def _normalize_response(self, response: str) -> str:
         response = response.replace("\r\n", "\n")
