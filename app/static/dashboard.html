@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RAG Knowledge Base — Andrade & Lemos</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a; --surface: #1e293b; --surface2: #334155;
+      --border: #475569; --text: #e2e8f0; --text-dim: #94a3b8;
+      --accent: #3b82f6; --accent2: #22c55e; --danger: #ef4444;
+      --radius: 10px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── Header ─────────────────────────────────────── */
+    .header {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .header h1 { font-size: 1.3rem; display: flex; align-items: center; gap: 0.6rem; }
+    .header h1 span { color: var(--accent); }
+    .header-right { display: flex; gap: 0.5rem; align-items: center; }
+
+    /* ── Tabs ────────────────────────────────────────── */
+    .tabs { display: flex; gap: 4px; background: var(--surface2); padding: 4px; border-radius: 8px; }
+    .tab {
+      padding: 0.5rem 1.2rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem;
+      font-weight: 600; color: var(--text-dim); transition: all 0.2s; border: none; background: none;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active { background: var(--accent); color: #fff; }
+
+    /* ── Stats Bar ───────────────────────────────────── */
+    .stats-bar {
+      display: flex; gap: 1rem; padding: 1rem 2rem; flex-wrap: wrap;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+    }
+    .stat-card {
+      background: var(--surface2); padding: 0.7rem 1.2rem; border-radius: 8px;
+      display: flex; flex-direction: column; min-width: 120px;
+    }
+    .stat-card .value { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+    .stat-card .label { font-size: 0.75rem; color: var(--text-dim); margin-top: 2px; }
+
+    /* ── Legend ───────────────────────────────────────── */
+    .legend {
+      display: flex; gap: 1rem; padding: 0.8rem 2rem; flex-wrap: wrap;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-dim); }
+    .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── Search ───────────────────────────────────────── */
+    .search-bar {
+      padding: 1rem 2rem; background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; gap: 0.7rem;
+    }
+    .search-bar input {
+      flex: 1; background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+      padding: 0.6rem 1rem; border-radius: 8px; font-size: 0.9rem; outline: none;
+    }
+    .search-bar input:focus { border-color: var(--accent); }
+    .search-bar button {
+      background: var(--accent); color: #fff; border: none; padding: 0.6rem 1.5rem;
+      border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem;
+    }
+    .search-bar button:hover { opacity: 0.9; }
+
+    /* ── Content area ────────────────────────────────── */
+    .content { padding: 1.5rem 2rem; }
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ── Graph View ──────────────────────────────────── */
+    #graph-container {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      overflow: hidden; position: relative;
+    }
+    #graph-svg { width: 100%; display: block; }
+    .graph-controls {
+      position: absolute; top: 12px; right: 12px; display: flex; flex-direction: column; gap: 6px; z-index: 10;
+    }
+    .graph-controls button {
+      width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--surface2); color: var(--text); cursor: pointer; font-size: 1.1rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .graph-controls button:hover { border-color: var(--accent); }
+    .graph-controls .slider-group { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .graph-controls label { font-size: 0.65rem; color: var(--text-dim); }
+    .graph-controls input[type=range] { width: 80px; accent-color: var(--accent); }
+
+    .tooltip {
+      position: absolute; padding: 0.8rem 1rem; background: #000c; border: 1px solid var(--border);
+      border-radius: 8px; font-size: 0.8rem; max-width: 320px; pointer-events: none;
+      display: none; z-index: 50; backdrop-filter: blur(8px); line-height: 1.4;
+    }
+    .tooltip .source { color: var(--accent); font-weight: 600; margin-bottom: 4px; }
+    .tooltip .chunk-text { color: var(--text-dim); }
+    .tooltip .sim-score { color: var(--accent2); font-weight: 600; margin-top: 4px; }
+
+    /* ── Cards View (non-graph) ──────────────────────── */
+    .cards-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 1rem;
+    }
+    .chunk-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1.2rem; transition: border-color 0.2s; position: relative;
+    }
+    .chunk-card:hover { border-color: var(--accent); }
+    .chunk-card .card-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.7rem;
+    }
+    .chunk-card .source-badge {
+      font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .chunk-card .chunk-idx { font-size: 0.75rem; color: var(--text-dim); }
+    .chunk-card .card-text { font-size: 0.85rem; color: var(--text-dim); line-height: 1.6; }
+    .chunk-card .card-footer {
+      margin-top: 0.8rem; display: flex; justify-content: space-between;
+      font-size: 0.72rem; color: var(--text-dim); border-top: 1px solid var(--border); padding-top: 0.5rem;
+    }
+
+    /* ── Search Results ──────────────────────────────── */
+    .search-results { margin-top: 1rem; }
+    .result-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1rem 1.2rem; margin-bottom: 0.7rem; position: relative;
+    }
+    .result-card .score-bar {
+      position: absolute; top: 0; left: 0; height: 100%; border-radius: var(--radius) 0 0 var(--radius);
+      opacity: 0.08;
+    }
+    .result-card .result-header { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
+    .result-card .score { font-weight: 700; font-size: 1rem; }
+    .result-card .result-text { font-size: 0.85rem; color: var(--text-dim); line-height: 1.6; }
+
+    /* ── Similarity Matrix ───────────────────────────── */
+    #matrix-container {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1.5rem; overflow-x: auto;
+    }
+    #matrix-container h3 { margin-bottom: 1rem; font-size: 1rem; }
+
+    /* ── Loading / Empty ─────────────────────────────── */
+    .loading { text-align: center; padding: 4rem; color: var(--text-dim); }
+    .loading .spinner {
+      width: 40px; height: 40px; border: 3px solid var(--surface2); border-top-color: var(--accent);
+      border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty { text-align: center; padding: 4rem; color: var(--text-dim); font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+
+<!-- ═══ Header ═══ -->
+<div class="header">
+  <h1><span>RAG</span> Knowledge Base Viewer</h1>
+  <div class="header-right">
+    <div class="tabs">
+      <button class="tab active" data-view="graph">Grafo</button>
+      <button class="tab" data-view="cards">Chunks</button>
+      <button class="tab" data-view="search">Busca Semântica</button>
+      <button class="tab" data-view="matrix">Matriz Similaridade</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Stats ═══ -->
+<div class="stats-bar" id="stats-bar">
+  <div class="stat-card"><div class="value" id="stat-chunks">-</div><div class="label">Chunks</div></div>
+  <div class="stat-card"><div class="value" id="stat-sources">-</div><div class="label">Fontes</div></div>
+  <div class="stat-card"><div class="value" id="stat-edges">-</div><div class="label">Conexões</div></div>
+  <div class="stat-card"><div class="value" id="stat-avgsize">-</div><div class="label">Tamanho médio</div></div>
+</div>
+
+<!-- ═══ Legend ═══ -->
+<div class="legend" id="legend"></div>
+
+<!-- ═══ Graph View ═══ -->
+<div class="view active" id="view-graph">
+  <div class="content">
+    <div id="graph-container" style="height:600px;">
+      <div class="graph-controls">
+        <button id="zoom-in" title="Zoom +">+</button>
+        <button id="zoom-out" title="Zoom -">−</button>
+        <button id="zoom-reset" title="Reset">⟲</button>
+        <div class="slider-group">
+          <label>Limiar: <span id="threshold-val">0.55</span></label>
+          <input type="range" id="threshold-slider" min="0.3" max="0.95" step="0.05" value="0.55">
+        </div>
+      </div>
+      <svg id="graph-svg"></svg>
+      <div class="tooltip" id="tooltip"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Cards View ═══ -->
+<div class="view" id="view-cards">
+  <div class="content">
+    <div class="cards-grid" id="cards-grid"></div>
+  </div>
+</div>
+
+<!-- ═══ Search View ═══ -->
+<div class="view" id="view-search">
+  <div class="search-bar">
+    <input type="text" id="search-input" placeholder="Ex: como tratar objeção de cancelamento do plano..." />
+    <button id="search-btn">Buscar</button>
+  </div>
+  <div class="content">
+    <div class="search-results" id="search-results">
+      <div class="empty">Digite uma pergunta para buscar na base de conhecimento</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Matrix View ═══ -->
+<div class="view" id="view-matrix">
+  <div class="content">
+    <div id="matrix-container">
+      <h3>Matriz de Similaridade entre Fontes (média por documento)</h3>
+      <div id="matrix-content"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+// State
+// ═══════════════════════════════════════════════════════════════════════
+let graphData = null;
+let chunksData = null;
+let simulation = null;
+let currentThreshold = 0.55;
+
+const API = window.location.origin;
+
+// ═══════════════════════════════════════════════════════════════════════
+// Tab switching
+// ═══════════════════════════════════════════════════════════════════════
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('view-' + tab.dataset.view).classList.add('active');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// Load data
+// ═══════════════════════════════════════════════════════════════════════
+async function loadData() {
+  try {
+    const [graphResp, chunksResp] = await Promise.all([
+      fetch(`${API}/api/v1/knowledge/graph?threshold=${currentThreshold}`),
+      fetch(`${API}/api/v1/knowledge/chunks`),
+    ]);
+    graphData = await graphResp.json();
+    chunksData = await chunksResp.json();
+
+    updateStats(graphData.stats);
+    updateLegend(graphData.stats.sources || []);
+    renderGraph(graphData);
+    renderCards(chunksData.chunks || []);
+    renderMatrix(graphData);
+  } catch (err) {
+    console.error('Load error:', err);
+    document.getElementById('stats-bar').innerHTML = '<div class="empty">Erro ao carregar dados. Certifique-se que a API está rodando.</div>';
+  }
+}
+
+function updateStats(stats) {
+  document.getElementById('stat-chunks').textContent = stats.total_chunks || 0;
+  document.getElementById('stat-sources').textContent = (stats.sources || []).length;
+  document.getElementById('stat-edges').textContent = stats.total_edges || 0;
+  document.getElementById('stat-avgsize').textContent = (stats.avg_chunk_size || 0) + ' chars';
+}
+
+function updateLegend(sources) {
+  const el = document.getElementById('legend');
+  el.innerHTML = sources.map(s =>
+    `<div class="legend-item"><div class="legend-dot" style="background:${s.color}"></div>${s.name.replace('.txt','')} (${s.count})</div>`
+  ).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Graph (D3 Force-Directed)
+// ═══════════════════════════════════════════════════════════════════════
+function renderGraph(data) {
+  const container = document.getElementById('graph-container');
+  const svg = d3.select('#graph-svg');
+  svg.selectAll('*').remove();
+
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+  svg.attr('viewBox', `0 0 ${width} ${height}`);
+
+  const tooltip = document.getElementById('tooltip');
+
+  const nodes = data.nodes.map(d => ({...d}));
+  const links = data.edges.map(d => ({...d}));
+
+  // Zoom
+  const g = svg.append('g');
+  const zoom = d3.zoom()
+    .scaleExtent([0.2, 5])
+    .on('zoom', e => g.attr('transform', e.transform));
+  svg.call(zoom);
+
+  document.getElementById('zoom-in').onclick = () => svg.transition().call(zoom.scaleBy, 1.3);
+  document.getElementById('zoom-out').onclick = () => svg.transition().call(zoom.scaleBy, 0.7);
+  document.getElementById('zoom-reset').onclick = () => svg.transition().call(zoom.transform, d3.zoomIdentity);
+
+  // Simulation
+  simulation = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(d => d.id).distance(d => 120 * (1 - (d.similarity || 0.5))))
+    .force('charge', d3.forceManyBody().strength(-200))
+    .force('center', d3.forceCenter(width / 2, height / 2))
+    .force('collision', d3.forceCollide(25));
+
+  // Edges
+  const link = g.append('g')
+    .selectAll('line')
+    .data(links)
+    .enter().append('line')
+    .attr('stroke', d => d.same_source ? '#475569' : '#3b82f640')
+    .attr('stroke-width', d => 0.5 + (d.similarity || 0.5) * 3)
+    .attr('stroke-dasharray', d => d.same_source ? 'none' : '4 2');
+
+  // Nodes
+  const node = g.append('g')
+    .selectAll('g')
+    .data(nodes)
+    .enter().append('g')
+    .call(d3.drag()
+      .on('start', (e, d) => { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+      .on('drag', (e, d) => { d.fx = e.x; d.fy = e.y; })
+      .on('end', (e, d) => { if (!e.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; })
+    );
+
+  node.append('circle')
+    .attr('r', d => 8 + Math.sqrt(d.char_count) * 0.3)
+    .attr('fill', d => d.color)
+    .attr('stroke', '#fff')
+    .attr('stroke-width', 1.5)
+    .style('cursor', 'pointer');
+
+  node.append('text')
+    .text(d => d.label)
+    .attr('dx', 14).attr('dy', 4)
+    .attr('fill', '#94a3b8')
+    .attr('font-size', '10px');
+
+  // Tooltip
+  node.on('mouseover', (e, d) => {
+    tooltip.style.display = 'block';
+    tooltip.innerHTML = `
+      <div class="source">${d.source}</div>
+      <div class="chunk-text">${d.text_preview}</div>
+      <div class="sim-score">${d.char_count} caracteres</div>
+    `;
+  })
+  .on('mousemove', e => {
+    tooltip.style.left = (e.pageX + 15) + 'px';
+    tooltip.style.top = (e.pageY - 10) + 'px';
+  })
+  .on('mouseout', () => { tooltip.style.display = 'none'; });
+
+  // Highlight connections on hover
+  node.on('mouseover', function(e, d) {
+    tooltip.style.display = 'block';
+    tooltip.innerHTML = `
+      <div class="source">${d.source}</div>
+      <div class="chunk-text">${d.text_preview}</div>
+      <div class="sim-score">${d.char_count} caracteres</div>
+    `;
+    const connected = new Set();
+    links.forEach(l => {
+      const sid = typeof l.source === 'object' ? l.source.id : l.source;
+      const tid = typeof l.target === 'object' ? l.target.id : l.target;
+      if (sid === d.id) connected.add(tid);
+      if (tid === d.id) connected.add(sid);
+    });
+    node.selectAll('circle').attr('opacity', n => connected.has(n.id) || n.id === d.id ? 1 : 0.15);
+    node.selectAll('text').attr('opacity', n => connected.has(n.id) || n.id === d.id ? 1 : 0.1);
+    link.attr('opacity', l => {
+      const sid = typeof l.source === 'object' ? l.source.id : l.source;
+      const tid = typeof l.target === 'object' ? l.target.id : l.target;
+      return sid === d.id || tid === d.id ? 1 : 0.05;
+    });
+  })
+  .on('mouseout', () => {
+    tooltip.style.display = 'none';
+    node.selectAll('circle').attr('opacity', 1);
+    node.selectAll('text').attr('opacity', 1);
+    link.attr('opacity', 1);
+  });
+
+  simulation.on('tick', () => {
+    link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+        .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+    node.attr('transform', d => `translate(${d.x},${d.y})`);
+  });
+}
+
+// Threshold slider
+const slider = document.getElementById('threshold-slider');
+slider.addEventListener('input', async () => {
+  currentThreshold = parseFloat(slider.value);
+  document.getElementById('threshold-val').textContent = currentThreshold.toFixed(2);
+  const resp = await fetch(`${API}/api/v1/knowledge/graph?threshold=${currentThreshold}`);
+  graphData = await resp.json();
+  updateStats(graphData.stats);
+  renderGraph(graphData);
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// Cards View (non-graph)
+// ═══════════════════════════════════════════════════════════════════════
+function renderCards(chunks) {
+  const grid = document.getElementById('cards-grid');
+  if (!chunks.length) { grid.innerHTML = '<div class="empty">Nenhum chunk na base de conhecimento</div>'; return; }
+
+  const sources = [...new Set(chunks.map(c => c.source))];
+  const colors = {};
+  if (graphData && graphData.stats && graphData.stats.sources) {
+    graphData.stats.sources.forEach(s => { colors[s.name] = s.color; });
+  }
+
+  grid.innerHTML = chunks.map(c => {
+    const color = colors[c.source] || '#6b7280';
+    return `
+      <div class="chunk-card">
+        <div class="card-header">
+          <span class="source-badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${c.source.replace('.txt','')}</span>
+          <span class="chunk-idx">#${c.chunk_index}</span>
+        </div>
+        <div class="card-text">${escapeHtml(c.text)}</div>
+        <div class="card-footer">
+          <span>${c.char_count} chars</span>
+          <span>Chunk ${c.chunk_index}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Search
+// ═══════════════════════════════════════════════════════════════════════
+document.getElementById('search-btn').addEventListener('click', doSearch);
+document.getElementById('search-input').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+
+async function doSearch() {
+  const query = document.getElementById('search-input').value.trim();
+  if (!query) return;
+
+  const container = document.getElementById('search-results');
+  container.innerHTML = '<div class="loading"><div class="spinner"></div>Buscando...</div>';
+
+  try {
+    const resp = await fetch(`${API}/api/v1/knowledge/search?q=${encodeURIComponent(query)}&top_k=6`);
+    const data = await resp.json();
+
+    if (!data.results || !data.results.length) {
+      container.innerHTML = '<div class="empty">Nenhum resultado encontrado</div>';
+      return;
+    }
+
+    const maxScore = Math.max(...data.results.map(r => r.score));
+    container.innerHTML = data.results.map((r, i) => {
+      const pct = maxScore > 0 ? (r.score / maxScore * 100) : 0;
+      const scoreColor = r.score > 0.7 ? 'var(--accent2)' : r.score > 0.4 ? 'var(--accent)' : 'var(--danger)';
+      return `
+        <div class="result-card">
+          <div class="score-bar" style="width:${pct}%;background:${scoreColor}"></div>
+          <div class="result-header">
+            <span style="color:var(--accent);font-weight:600">${r.source.replace('.txt','')} #${r.chunk_index}</span>
+            <span class="score" style="color:${scoreColor}">${(r.score * 100).toFixed(1)}%</span>
+          </div>
+          <div class="result-text">${highlightQuery(escapeHtml(r.text), query)}</div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    container.innerHTML = '<div class="empty">Erro na busca: ' + err.message + '</div>';
+  }
+}
+
+function highlightQuery(text, query) {
+  const words = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  let result = text;
+  words.forEach(w => {
+    const regex = new RegExp(`(${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    result = result.replace(regex, '<mark style="background:#3b82f640;color:#fff;padding:1px 3px;border-radius:3px">$1</mark>');
+  });
+  return result;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Similarity Matrix
+// ═══════════════════════════════════════════════════════════════════════
+function renderMatrix(data) {
+  const container = document.getElementById('matrix-content');
+  if (!data.edges || !data.nodes) { container.innerHTML = '<div class="empty">Sem dados</div>'; return; }
+
+  // Group by source and compute average similarity
+  const sources = [...new Set(data.nodes.map(n => n.source))];
+  const matrix = {};
+  sources.forEach(s1 => { matrix[s1] = {}; sources.forEach(s2 => { matrix[s1][s2] = { sum: 0, count: 0 }; }); });
+
+  data.edges.forEach(e => {
+    const s1 = data.nodes.find(n => n.id === e.source)?.source;
+    const s2 = data.nodes.find(n => n.id === e.target)?.source;
+    if (s1 && s2) {
+      matrix[s1][s2].sum += e.similarity;
+      matrix[s1][s2].count++;
+      matrix[s2][s1].sum += e.similarity;
+      matrix[s2][s1].count++;
+    }
+  });
+
+  const shortName = s => s.replace('.txt', '').substring(0, 20);
+
+  let html = '<table style="border-collapse:collapse;width:100%;font-size:0.8rem;">';
+  html += '<tr><th style="padding:8px;text-align:left;color:var(--text-dim)"></th>';
+  sources.forEach(s => html += `<th style="padding:8px;text-align:center;color:var(--accent);font-weight:600;writing-mode:vertical-rl;transform:rotate(180deg);min-width:40px">${shortName(s)}</th>`);
+  html += '</tr>';
+
+  sources.forEach(s1 => {
+    html += `<tr><td style="padding:8px;font-weight:600;color:var(--text);white-space:nowrap">${shortName(s1)}</td>`;
+    sources.forEach(s2 => {
+      const cell = matrix[s1][s2];
+      const avg = cell.count > 0 ? cell.sum / cell.count : 0;
+      const intensity = Math.floor(avg * 255);
+      const bg = s1 === s2
+        ? `rgba(59,130,246,0.3)`
+        : `rgba(34,197,94,${avg * 0.8})`;
+      html += `<td style="padding:8px;text-align:center;background:${bg};border:1px solid var(--surface);border-radius:4px;font-weight:600;color:${avg > 0.3 ? '#fff' : 'var(--text-dim)'}">${avg > 0 ? avg.toFixed(2) : '-'}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</table>';
+
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Utils
+// ═══════════════════════════════════════════════════════════════════════
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Init
+// ═══════════════════════════════════════════════════════════════════════
+loadData();
+</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+version: "3.8"
+
+services:
+  # ── Redis (State + Queue) ──────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ── FastAPI Backend (RAG + Agent) ──────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CHROMA_PERSIST_DIR=/app/data/chroma
+      - KNOWLEDGE_DIR=/app/app/knowledge
+    volumes:
+      - chroma_data:/app/data/chroma
+      - ./app/knowledge:/app/app/knowledge:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/api/v1/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── WhatsApp Service (Baileys + QR Code) ───────────────────────────
+  whatsapp:
+    build:
+      context: ./whatsapp-service
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+    environment:
+      - WHATSAPP_API_URL=http://api:8000
+      - QR_SERVER_PORT=3001
+    volumes:
+      - whatsapp_auth:/app/auth_state
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  chroma_data:
+  whatsapp_auth:
