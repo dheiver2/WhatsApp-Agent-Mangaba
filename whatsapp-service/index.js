@@ -25,7 +25,26 @@ const chatQueues = new Map();
 // ── QR Code Web Server ──────────────────────────────────────────────
 const app = express();
 
-app.get("/", (req, res) => {
+app.get("/", async (req, res) => {
+  let qrHtml = '<p style="color:#999;">Aguardando...</p>';
+  let statusClass = "waiting";
+  let statusText = "Aguardando QR Code...";
+
+  if (connectionStatus === "connected") {
+    qrHtml = '<p style="color:#25D366;font-size:3rem;">&#10003;</p><p style="color:#333;">Conectado</p>';
+    statusClass = "connected";
+    statusText = "Conectado ao WhatsApp!";
+  } else if (currentQR) {
+    try {
+      const qrDataUrl = await QRCode.toDataURL(currentQR, { width: 280 });
+      qrHtml = '<img src="' + qrDataUrl + '" alt="QR Code"/>';
+      statusClass = "waiting";
+      statusText = "Escaneie o QR Code com seu WhatsApp";
+    } catch (e) {
+      qrHtml = '<p style="color:red;">Erro ao gerar QR</p>';
+    }
+  }
+
   res.send(`
     <!DOCTYPE html>
     <html lang="pt-BR">
@@ -54,32 +73,11 @@ app.get("/", (req, res) => {
       <div class="container">
         <h1>Andrade & Lemos</h1>
         <p class="subtitle">Agente de Atendimento WhatsApp</p>
-        <div id="qr-container"><p>Carregando...</p></div>
-        <div id="status" class="status waiting">Aguardando QR Code...</div>
+        <div id="qr-container">${qrHtml}</div>
+        <div id="status" class="status ${statusClass}">${statusText}</div>
       </div>
       <script>
-        async function poll() {
-          try {
-            const res = await fetch('/status');
-            const data = await res.json();
-            const statusEl = document.getElementById('status');
-            const qrEl = document.getElementById('qr-container');
-            if (data.status === 'connected') {
-              statusEl.className = 'status connected';
-              statusEl.textContent = 'Conectado ao WhatsApp!';
-              qrEl.innerHTML = '<p style="color:#25D366;font-size:3rem;">✓</p><p style="color:#333;">Conectado</p>';
-            } else if (data.qr) {
-              statusEl.className = 'status waiting';
-              statusEl.textContent = 'Escaneie o QR Code com seu WhatsApp';
-              qrEl.innerHTML = '<img src="' + data.qr + '" alt="QR Code"/>';
-            } else {
-              statusEl.className = 'status disconnected';
-              statusEl.textContent = 'Aguardando conexão...';
-            }
-          } catch(e) {}
-          setTimeout(poll, 2000);
-        }
-        poll();
+        setTimeout(function() { window.location.reload(); }, 3000);
       </script>
     </body>
     </html>
