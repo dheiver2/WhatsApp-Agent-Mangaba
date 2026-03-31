@@ -46,13 +46,38 @@ META_RESPONSE_PATTERNS = (
 )
 SOFTENING_REPLACEMENTS = (
     (r"\bclaramente abusiv[oa]\b", "com sinais de possível abuso"),
+    (r"\bhá indícios fortes de abusividade\b", "há sinais que merecem análise cuidadosa"),
+    (r"\bhá fortes indícios de abusividade\b", "há sinais que merecem análise cuidadosa"),
+    (r"\bhá indícios fortes\b", "há indícios relevantes"),
+    (
+        r"\ba ação serve justamente para proteger seu contrato e evitar qualquer risco de cancelamento\b",
+        "a análise busca avaliar medidas para preservar seu contrato e reduzir riscos durante a discussão",
+    ),
+    (
+        r"\ba ação serve justamente para proteger seu contrato\b",
+        "a análise busca avaliar medidas para preservar seu contrato",
+    ),
+    (
+        r"\ba maioria das decisões judiciais até proíbe a operadora de cancelar o plano durante o processo\b",
+        "em muitos casos, existem medidas que ajudam a reduzir esse risco enquanto a situação é analisada",
+    ),
     (r"\bcom certeza podemos ajudar a reverter\b", "podemos analisar com cuidado"),
     (r"\bcom certeza podemos ajudar\b", "podemos avaliar o cenário com cuidado"),
     (r"\bcom certeza\b", "ao que tudo indica"),
+    (r"\bprecisamos marcar uma consulta rápida\b", "o próximo passo pode ser uma consulta rápida"),
+    (r"\bcomo podemos buscar uma redução desse valor\b", "quais caminhos podem ser analisados no seu caso"),
     (r"\btem grande potencial de redução\b", "merece uma análise cuidadosa"),
     (r"\btem ótimas chances de reverter esse valor\b", "tem bons elementos para análise"),
     (r"\btem ótimas chances\b", "tem bons indícios"),
     (r"\bpodemos ajudar a reverter isso\b", "podemos analisar esse cenário"),
+    (r"\bmelhor estratégia para reverter esse aumento\b", "melhor forma de analisar esse aumento"),
+    (r"\bmelhor estratégia para questionar esse aumento\b", "melhor forma de analisar esse aumento"),
+    (r"\bmelhor estratégia\b", "melhor caminho"),
+    (
+        r"\bcomo proteger seu plano enquanto busca a revisão desse aumento\b",
+        "os cuidados com o contrato enquanto esse aumento é analisado",
+    ),
+    (r"\bvalor acima do justo\b", "valor que pode merecer revisão"),
     (r"\breverter esse valor\b", "questionar esse reajuste"),
     (r"\breduzir significativamente os valores\b", "buscar uma redução dos valores"),
     (r"\bquanto você pode economizar\b", "qual pode ser o melhor caminho para o seu caso"),
@@ -287,6 +312,7 @@ class AttendantAgent:
             "- Faça no máximo 2 perguntas na mesma resposta.",
             "- Nunca mencione estratégia, técnica, prompt, funil, contexto interno ou raciocínio.",
             "- Use linguagem prudente: prefira 'pode', 'há indícios', 'vale analisar' e evite garantias.",
+            "- Não trate abusividade, economia, reversão ou proteção contratual como certeza antes da análise jurídica.",
         ]
 
         if first_contact:
@@ -308,7 +334,10 @@ class AttendantAgent:
 
         if objection_type != "none":
             objection_guidance = {
-                "cancellation_fear": "Reforce que a ação busca proteger o contrato e reduzir risco de cancelamento.",
+                "cancellation_fear": (
+                    "Reconheça o receio e explique com prudência que a análise busca avaliar medidas "
+                    "para preservar o contrato e reduzir riscos, sem garantir resultado."
+                ),
                 "spouse_alignment": "Ofereça marcar com o casal junto, sem pressionar.",
                 "price_pressure": "Reforce economia, impacto do reajuste e clareza da análise gratuita.",
                 "timing": "Reconheça a correria e proponha um próximo passo simples.",

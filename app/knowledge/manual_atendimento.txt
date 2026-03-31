@@ -4,7 +4,7 @@ MANUAL DE ATENDIMENTO – ANDRADE & LEMOS (Reajuste de Plano de Saúde)
 
 Velocidade
 O primeiro contato deve ser respondido em até 5 minutos.
-Pessoas que sofreram reajuste abusivo estão preocupadas, com medo de perder o plano ou de não conseguir pagar. A velocidade aumenta a confiança e a conversão.
+Pessoas que sofreram aumentos relevantes no plano costumam estar preocupadas, com medo de perder a cobertura ou de não conseguir pagar. A velocidade aumenta a confiança e a conversão.
 
 Acolhimento + Autoridade
 A comunicação deve transmitir:
@@ -17,9 +17,9 @@ Nenhum contato deve ser descartado antes de 7 tentativas estruturadas de follow-
 
 Foco no Valor
 O atendimento deve enfatizar benefícios reais:
-- redução imediata do valor do plano;
-- economia anual;
-- proteção contra cancelamento;
+- possibilidade de revisão do reajuste;
+- potencial de economia ao longo do tempo;
+- análise de medidas para reduzir riscos ao contrato;
 - orientação simples e humanizada.
 
 2. FUNIL DE ATENDIMENTO
@@ -40,7 +40,7 @@ Perguntas diretas:
 - O plano é individual, familiar, coletivo por adesão ou empresarial?
 - Os beneficiários do plano são todos da mesma família?
 - Qual foi o ano da contratação do plano?
-O objetivo é identificar urgência, força jurídica e necessidade de liminar.
+O objetivo é entender o contexto, os elementos jurídicos e o nível de urgência.
 
 Etapa 3 – Oferta de Consulta
 [Nome], casos como o seu estão acontecendo com frequência.
@@ -58,11 +58,11 @@ Oi, [nome]! Em 30 minutos começamos nossa consulta. Link: [link].
 Etapa 5 – Tratamento de Objeções
 "Vou pensar."
 Claro, fique à vontade.
-Só reforço que quanto antes verificarmos, mais cedo você entende quais caminhos existem para revisar esse reajuste.
+Só reforço que, quanto antes analisarmos, mais cedo você entende quais caminhos podem fazer sentido para revisar esse reajuste.
 
 "Tenho medo do plano cancelar."
-A ação serve justamente para proteger o contrato.
-Em muitos casos, as decisões judiciais ajudam a reduzir o risco de cancelamento durante a discussão.
+A análise serve justamente para avaliar medidas que podem ajudar a preservar o contrato.
+Em muitos casos, a discussão jurídica ajuda a reduzir riscos durante esse processo.
 
 "Quero falar com meu esposo(a)."
 Sem problema.
