@@ -28,7 +28,7 @@ Etapa 1 – Abordagem Inicial (WhatsApp)
 Mensagem 1:
 Olá! Aqui é do escritório Andrade & Lemos.
 Vi que você demonstrou interesse em entender se o reajuste do seu plano de saúde pode ser abusivo.
-Muitos planos aumentaram muito acima do permitido, e em vários casos conseguimos reduzir o valor rapidamente.
+Muitos planos têm apresentado aumentos relevantes, e em vários casos vale analisar se o reajuste ficou acima do permitido.
 
 Mensagem 2:
 Vou te fazer algumas perguntas para entender o seu momento e te direcionar melhor.
@@ -44,12 +44,12 @@ O objetivo é identificar urgência, força jurídica e necessidade de liminar.
 
 Etapa 3 – Oferta de Consulta
 [Nome], casos como o seu estão acontecendo com frequência.
-Podemos marcar uma análise gratuita para verificar se esse aumento foi abusivo e te mostrar quanto pode ser reduzido.
+Podemos marcar uma análise gratuita para verificar se esse aumento pode ser questionado e qual pode ser o melhor caminho para o seu caso.
 Tenho horário [opção 1] ou [opção 2]. Qual é melhor para você?
 
 Etapa 4 – Confirmação da Consulta
 1 dia antes:
-Oi, [nome]! Confirmando nossa consulta amanhã às [horário]. Já deixamos uma análise inicial preparada.
+Oi, [nome]! Passando para confirmar nossa consulta amanhã às [horário].
 No dia:
 Bom dia, [nome]! Só reforçando nossa conversa hoje às [horário].
 30 minutos antes:
@@ -58,11 +58,11 @@ Oi, [nome]! Em 30 minutos começamos nossa consulta. Link: [link].
 Etapa 5 – Tratamento de Objeções
 "Vou pensar."
 Claro, fique à vontade.
-Só reforço que quanto antes verificarmos, mais rápido você pode voltar a pagar o valor justo.
+Só reforço que quanto antes verificarmos, mais cedo você entende quais caminhos existem para revisar esse reajuste.
 
 "Tenho medo do plano cancelar."
 A ação serve justamente para proteger o contrato.
-As decisões geralmente impedem qualquer tipo de cancelamento.
+Em muitos casos, as decisões judiciais ajudam a reduzir o risco de cancelamento durante a discussão.
 
 "Quero falar com meu esposo(a)."
 Sem problema.
@@ -72,9 +72,9 @@ Podemos marcar com vocês dois juntos para explicar tudo com clareza.
 Dia 1:
 Olá, [nome]! Tudo bem? Conseguiu ver minha mensagem? Seu reajuste pode estar acima do permitido.
 Dia 2:
-Muitas pessoas só descobrem que o reajuste é abusivo depois de meses pagando. Quer verificar o seu hoje?
+Muitas pessoas só descobrem depois de meses que o reajuste podia ser discutido. Quer verificar o seu hoje?
 Dia 3:
-Atendemos um caso parecido essa semana e conseguimos reduzir rapidamente. Pode ser o seu também.
+Atendemos um caso parecido essa semana e vimos pontos que também podem merecer análise no seu caso.
 Dia 4:
 Posso te enviar um resumo simples de como funciona esse pedido de revisão?
 Dia 5:
@@ -82,7 +82,7 @@ Quer que eu veja horários para nossa consulta?
 Dia 6:
 O processo é simples, seguro e documental. Faz sentido seguirmos?
 Dia 7:
-Estamos com duas vagas para análise hoje. Quer que eu reserve uma para você?
+Estamos com algumas vagas para análise hoje. Quer que eu te envie as opções disponíveis?
 
 4. SCRIPT DE PROPOSTA (OU/OU)
 [Nome], posso analisar o seu reajuste e te orientar corretamente.

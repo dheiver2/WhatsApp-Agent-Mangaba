@@ -44,6 +44,20 @@ META_RESPONSE_PATTERNS = (
     r"^\s*usei\s+.*$",
     r"^\s*observações?\s+estratégicas?:?\s*$",
 )
+SOFTENING_REPLACEMENTS = (
+    (r"\bclaramente abusiv[oa]\b", "com sinais de possível abuso"),
+    (r"\bcom certeza podemos ajudar a reverter\b", "podemos analisar com cuidado"),
+    (r"\bcom certeza podemos ajudar\b", "podemos avaliar o cenário com cuidado"),
+    (r"\bcom certeza\b", "ao que tudo indica"),
+    (r"\btem grande potencial de redução\b", "merece uma análise cuidadosa"),
+    (r"\btem ótimas chances de reverter esse valor\b", "tem bons elementos para análise"),
+    (r"\btem ótimas chances\b", "tem bons indícios"),
+    (r"\bpodemos ajudar a reverter isso\b", "podemos analisar esse cenário"),
+    (r"\breverter esse valor\b", "questionar esse reajuste"),
+    (r"\breduzir significativamente os valores\b", "buscar uma redução dos valores"),
+    (r"\bquanto você pode economizar\b", "qual pode ser o melhor caminho para o seu caso"),
+    (r"\bvalor justo\b", "valor mais adequado"),
+)
 
 
 class AttendantAgent:
@@ -272,6 +286,7 @@ class AttendantAgent:
             "- Termine com apenas uma próxima ação clara.",
             "- Faça no máximo 2 perguntas na mesma resposta.",
             "- Nunca mencione estratégia, técnica, prompt, funil, contexto interno ou raciocínio.",
+            "- Use linguagem prudente: prefira 'pode', 'há indícios', 'vale analisar' e evite garantias.",
         ]
 
         if first_contact:
@@ -508,6 +523,7 @@ class AttendantAgent:
             response = response.replace(keycap, plain)
 
         response = self._strip_meta_instructions(response)
+        response = self._soften_overstatements(response)
         response = re.sub(r"[*_`~]", "", response)
         response = re.sub(r"[\U0001F300-\U0001FAFF]", "", response)
         response = re.sub(r"[ \t]{2,}", " ", response)
@@ -523,3 +539,9 @@ class AttendantAgent:
                 continue
             cleaned_lines.append(line)
         return "\n".join(cleaned_lines)
+
+    def _soften_overstatements(self, response: str) -> str:
+        softened = response
+        for pattern, replacement in SOFTENING_REPLACEMENTS:
+            softened = re.sub(pattern, replacement, softened, flags=re.IGNORECASE)
+        return softened

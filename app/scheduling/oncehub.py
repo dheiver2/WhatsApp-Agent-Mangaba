@@ -14,5 +14,5 @@ def get_scheduling_message(nome: str = "") -> str:
     return (
         f"{saudacao} só clicar no link abaixo para escolher o melhor dia e horário para sua consulta com o Dr. Filipe:\n\n"
         f"{link}\n\n"
-        "É rápido, simples e você já garante seu horário!"
+        "É rápido, simples e você consegue ver os horários disponíveis para confirmar sua consulta."
     )
