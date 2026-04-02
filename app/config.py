@@ -32,6 +32,11 @@ class Settings:
     agent_name: str
     agent_persona: str
     max_followup_days: int
+    outbound_worker_interval_seconds: int
+    outbound_morning_hour_start: int
+    outbound_morning_hour_end: int
+    outbound_evening_hour_start: int
+    outbound_evening_hour_end: int
     response_timeout_seconds: int
     redis_ping_interval_seconds: int
     phone_lock_wait_seconds: int
@@ -64,6 +69,11 @@ def get_settings() -> Settings:
             "Natasha, assistente jurídica do escritório Andrade & Lemos, feminina, carismática, acolhedora e especializada em reajuste de plano de saúde",
         ),
         max_followup_days=_get_env_int("MAX_FOLLOWUP_DAYS", 7),
+        outbound_worker_interval_seconds=_get_env_int("OUTBOUND_WORKER_INTERVAL_SECONDS", 300),
+        outbound_morning_hour_start=_get_env_int("OUTBOUND_MORNING_HOUR_START", 8),
+        outbound_morning_hour_end=_get_env_int("OUTBOUND_MORNING_HOUR_END", 12),
+        outbound_evening_hour_start=_get_env_int("OUTBOUND_EVENING_HOUR_START", 18),
+        outbound_evening_hour_end=_get_env_int("OUTBOUND_EVENING_HOUR_END", 21),
         response_timeout_seconds=_get_env_int("RESPONSE_TIMEOUT_SECONDS", 300),
         redis_ping_interval_seconds=_get_env_int("REDIS_PING_INTERVAL_SECONDS", 5),
         phone_lock_wait_seconds=_get_env_int("PHONE_LOCK_WAIT_SECONDS", 120),

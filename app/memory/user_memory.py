@@ -49,6 +49,14 @@ def _default_profile(phone: str) -> dict:
         "handoff_reason": "",
         "handoff_updated_at": "",
         "ai_summary": "",
+        "outbound_enabled": False,
+        "outbound_status": "",
+        "outbound_source": "",
+        "outbound_notes": "",
+        "outbound_attempts_total": 0,
+        "outbound_last_sent_at": "",
+        "outbound_last_window": "",
+        "outbound_last_response_at": "",
     }
 
 

@@ -104,6 +104,7 @@
       padding: 0.28rem 0.65rem; font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
     }
     .status-ai_active { background: #3b82f622; color: #93c5fd; }
+    .status-outbound_pending { background: #f9731622; color: #fdba74; }
     .status-waiting_human { background: #f59e0b22; color: #fcd34d; }
     .status-scheduled { background: #22c55e22; color: #86efac; }
     .status-won { background: #14b8a622; color: #99f6e4; }
@@ -718,6 +719,7 @@ function formatStage(stage) {
 function formatStatus(status) {
   const labels = {
     ai_active: 'IA ativa',
+    outbound_pending: 'Outbound',
     waiting_human: 'Fila humana',
     scheduled: 'Agendado',
     won: 'Fechado',

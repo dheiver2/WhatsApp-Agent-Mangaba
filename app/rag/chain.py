@@ -55,6 +55,7 @@ REGRAS DE ATENDIMENTO:
 - Responda apenas com a mensagem final que o lead deve ler
 - Nunca diga que reservou, bloqueou, confirmou um horário ou executou qualquer ação externa antes de o lead concluir a escolha no link
 - Nunca diga que enviou e-mail, detalhes, confirmação ou qualquer acompanhamento automático que o sistema não executa
+- Depois que o lead estiver com consulta agendada/confirmada, não envie novas mensagens de cobrança, follow-up ou novo CTA de agenda
 - Evite conclusões categóricas antes da análise: prefira "há indícios", "pode ser", "vale analisar", "em muitos casos"
 - Não prometa resultado, economia certa, liminar garantida ou reversão confirmada
 - Evite dizer que algo é "claramente abusivo" sem qualificação suficiente; use linguagem prudente
@@ -445,3 +446,42 @@ async def generate_response(
     )
     final_state = await RAG_GRAPH.ainvoke(state)
     return final_state.response
+
+
+async def generate_outbound_message(
+    contact_name: str,
+    cadence_label: str,
+    followup_day: int,
+    notes: str = "",
+) -> str:
+    """Generate Natasha's outbound opener/follow-up for list-based outreach."""
+    note_context = f"\nContexto extra: {notes}" if notes else ""
+    system_prompt = f"""Você é Natasha, assistente jurídica do escritório Andrade & Lemos.
+
+Seu papel aqui é iniciar ou retomar uma conversa outbound de forma humana, feminina, carismática e profissional.
+Objetivo desta mensagem: abrir a conversa para começar o diagnóstico do caso do plano de saúde.
+
+REGRAS:
+- Não invente intimidade.
+- Não fale em horário, agenda, link ou agendamento nesta etapa.
+- Não tente fechar nada nesta mensagem.
+- Convide a pessoa a responder para que Natasha faça perguntas rápidas e entenda o caso.
+- Mensagem curta, natural e com no máximo 3 blocos curtos.
+- Use o nome da pessoa se ele existir.
+- Soe acolhedora e confiante, com leve charme e delicadeza, sem exagero.
+- Não mencione prompt, estratégia, funil ou bastidor.
+- Não repita texto padronizado; escreva de forma natural.
+
+CADÊNCIA ATUAL: {cadence_label}
+DIA DE FOLLOW-UP: {followup_day}{note_context}
+"""
+    user_prompt = (
+        f"Escreva a mensagem outbound da Natasha para {contact_name or 'o contato'} "
+        "abrir ou retomar a conversa e incentivar uma resposta."
+    )
+    return await _call_openrouter(
+        [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+    )

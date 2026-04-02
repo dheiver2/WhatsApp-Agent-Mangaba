@@ -19,6 +19,7 @@ from app.memory.user_memory import (
     get_stage,
     set_stage,
 )
+from app.outbound.service import sync_outbound_state_after_stage_change
 from app.rag.chain import generate_response
 from app.scheduling.oncehub import get_scheduling_message
 
@@ -276,6 +277,7 @@ class AttendantAgent:
 
         profile["lead_status"] = self._determine_lead_status(profile, new_stage)
         profile["ai_summary"] = self._build_lead_summary(profile, new_stage, history, text)
+        await sync_outbound_state_after_stage_change(phone, profile, new_stage)
 
         # 10. Save state
         await save_user_profile(phone, profile)
@@ -512,7 +514,7 @@ class AttendantAgent:
         return next_stage
 
     def _should_offer_scheduling_link(self, profile: dict, current_stage: str) -> bool:
-        return current_stage in {"oferta_consulta", "tratamento_objecao", "agendamento", "confirmacao_consulta"}
+        return current_stage in {"oferta_consulta", "tratamento_objecao", "agendamento"}
 
     def _time_based_greeting(self) -> str:
         hour = datetime.now().hour
@@ -679,6 +681,8 @@ class AttendantAgent:
     def _determine_lead_status(self, profile: dict, stage: str) -> str:
         if profile.get("handoff_requested"):
             return "waiting_human"
+        if profile.get("outbound_enabled") and profile.get("outbound_status") in {"queued", "contacted"}:
+            return "outbound_pending"
         if stage == "confirmacao_consulta":
             return "scheduled"
         if stage in {"fechamento", "indicacao_ativa"}:

@@ -343,7 +343,7 @@ class IntentRouter:
                 "general": "agendamento",
             },
             "confirmacao_consulta": {
-                "general": "pos_reuniao",
+                "general": "confirmacao_consulta",
             },
             "pos_reuniao": {
                 "confirmation": "fechamento",

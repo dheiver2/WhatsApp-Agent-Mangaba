@@ -1,4 +1,6 @@
 import asyncio
+import contextlib
+import json
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -18,6 +20,12 @@ from app.memory.user_memory import (
     get_chat_history,
     get_stage,
     get_user_profile,
+)
+from app.outbound.service import (
+    list_outbound_contacts,
+    outbound_worker,
+    process_due_outbound_messages,
+    register_outbound_contacts,
 )
 from app.rag.vectorstore import load_knowledge_base
 from app.rag.visualization import get_all_chunks, get_graph_data, search_with_details
@@ -45,6 +53,7 @@ def _build_lead_item(phone: str, profile: dict, stage: str) -> dict:
         "name": profile.get("name", ""),
         "stage": stage,
         "lead_status": profile.get("lead_status", "ai_active"),
+        "outbound_status": profile.get("outbound_status", ""),
         "operadora": profile.get("operadora", ""),
         "last_contact": profile.get("last_contact", ""),
         "handoff_requested": bool(profile.get("handoff_requested")),
@@ -88,7 +97,11 @@ async def lifespan(app: Starlette):
     print("[Startup] Loading knowledge base...")
     load_knowledge_base()
     print("[Startup] Ready to receive messages!")
+    outbound_task = asyncio.create_task(outbound_worker())
     yield
+    outbound_task.cancel()
+    with contextlib.suppress(asyncio.CancelledError):
+        await outbound_task
     print("[Shutdown] Cleaning up...")
 
 
@@ -195,6 +208,26 @@ async def ops_summary(_request: Request) -> JSONResponse:
     )
 
 
+async def list_outbound(_request: Request) -> JSONResponse:
+    contacts = await list_outbound_contacts()
+    return JSONResponse({"contacts": contacts, "total": len(contacts)})
+
+
+async def import_outbound_contacts(request: Request) -> JSONResponse:
+    payload = await request.json()
+    contacts = payload.get("contacts")
+    if not isinstance(contacts, list) or not contacts:
+        return _json_error("Field 'contacts' must be a non-empty list", 400)
+
+    registered = await register_outbound_contacts(contacts)
+    return JSONResponse({"registered": registered, "total": len(registered)})
+
+
+async def run_outbound(_request: Request) -> JSONResponse:
+    result = await process_due_outbound_messages()
+    return JSONResponse(result)
+
+
 async def knowledge_chunks(_request: Request) -> JSONResponse:
     chunks = get_all_chunks()
     return JSONResponse({"chunks": chunks, "total": len(chunks)})
@@ -242,6 +275,9 @@ routes = [
     Route("/api/v1/leads", list_leads, methods=["GET"]),
     Route("/api/v1/leads/{phone:str}", get_lead, methods=["GET"]),
     Route("/api/v1/ops/summary", ops_summary, methods=["GET"]),
+    Route("/api/v1/outbound/contacts", list_outbound, methods=["GET"]),
+    Route("/api/v1/outbound/contacts", import_outbound_contacts, methods=["POST"]),
+    Route("/api/v1/outbound/run", run_outbound, methods=["POST"]),
     Route("/api/v1/knowledge/chunks", knowledge_chunks, methods=["GET"]),
     Route("/api/v1/knowledge/graph", knowledge_graph, methods=["GET"]),
     Route("/api/v1/knowledge/search", knowledge_search, methods=["GET"]),

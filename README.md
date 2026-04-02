@@ -51,6 +51,11 @@ QR_SERVER_PORT=3001
 AGENT_NAME=Natasha
 AGENT_PERSONA=Natasha, assistente juridica do escritorio Andrade & Lemos, feminina, carismatica, acolhedora e especializada em reajuste de plano de saude
 MAX_FOLLOWUP_DAYS=7
+OUTBOUND_WORKER_INTERVAL_SECONDS=300
+OUTBOUND_MORNING_HOUR_START=8
+OUTBOUND_MORNING_HOUR_END=12
+OUTBOUND_EVENING_HOUR_START=18
+OUTBOUND_EVENING_HOUR_END=21
 RESPONSE_TIMEOUT_SECONDS=300
 ```
 
@@ -174,11 +179,21 @@ Endpoints úteis da API:
 - `POST /api/v1/message`
 - `GET /api/v1/leads`
 - `GET /api/v1/leads/{phone}`
+- `GET /api/v1/outbound/contacts`
+- `POST /api/v1/outbound/contacts`
+- `POST /api/v1/outbound/run`
 - `GET /api/v1/knowledge/chunks`
 - `GET /api/v1/knowledge/graph`
 - `GET /api/v1/knowledge/search?q=plano&top_k=5`
 
 O agendamento usa somente o link do OnceHub em `ONCEHUB_BOOKING_URL`. O assistente pede que o cliente escolha o melhor dia e horário diretamente nessa agenda.
+
+Modo outbound por lista:
+
+- importe contatos em `POST /api/v1/outbound/contacts`
+- Natasha faz no máximo 1 tentativa pela manhã e 1 pela noite enquanto o contato não responder
+- ao responder, o contato sai automaticamente da cadência outbound e entra no fluxo normal de diagnóstico
+- ao agendar/confirmar, Natasha não volta a insistir
 
 ## Estrutura do projeto
 

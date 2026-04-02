@@ -9,6 +9,7 @@ from app.memory.user_memory import (
     release_message_processing,
     reserve_message_processing,
 )
+from app.outbound.service import register_outbound_reply
 
 _agent: AttendantAgent | None = None
 
@@ -82,6 +83,7 @@ async def handle_message(msg: IncomingMessage) -> OutgoingMessage:
 
     try:
         async with conversation_lock(phone):
+            await register_outbound_reply(phone)
             result = await agent.process_message(
                 phone=phone,
                 name=msg.name,
