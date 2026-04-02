@@ -49,11 +49,6 @@ def _default_profile(phone: str) -> dict:
         "handoff_reason": "",
         "handoff_updated_at": "",
         "ai_summary": "",
-        "scheduled_booking_id": "",
-        "scheduled_start_at": "",
-        "scheduled_end_at": "",
-        "suggested_slots": [],
-        "suggested_slots_updated_at": "",
     }
 
 

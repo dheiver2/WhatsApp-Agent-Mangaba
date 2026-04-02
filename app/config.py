@@ -25,12 +25,7 @@ class Settings:
     openrouter_model: str
     redis_url: str
     whatsapp_service_url: str
-    oncehub_api_key: str
-    oncehub_api_base_url: str
     oncehub_booking_url: str
-    oncehub_booking_calendar_id: str
-    oncehub_webhook_secret: str
-    oncehub_slot_lookahead_days: int
     api_host: str
     api_port: int
     api_secret_key: str
@@ -59,12 +54,7 @@ def get_settings() -> Settings:
         openrouter_model=os.getenv("OPENROUTER_MODEL", "deepseek/deepseek-chat-v3-0324"),
         redis_url=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
         whatsapp_service_url=os.getenv("WHATSAPP_SERVICE_URL", "http://localhost:3001"),
-        oncehub_api_key=os.getenv("ONCEHUB_API_KEY", ""),
-        oncehub_api_base_url=os.getenv("ONCEHUB_API_BASE_URL", "https://api.oncehub.com"),
-        oncehub_booking_url=os.getenv("ONCEHUB_BOOKING_URL", "https://oncehub.com/PAGE-83B77E38F9"),
-        oncehub_booking_calendar_id=os.getenv("ONCEHUB_BOOKING_CALENDAR_ID", ""),
-        oncehub_webhook_secret=os.getenv("ONCEHUB_WEBHOOK_SECRET", ""),
-        oncehub_slot_lookahead_days=_get_env_int("ONCEHUB_SLOT_LOOKAHEAD_DAYS", 14),
+        oncehub_booking_url=os.getenv("ONCEHUB_BOOKING_URL", "https://oncehub.com/.ELW9PXD6B54K"),
         api_host=os.getenv("API_HOST", "0.0.0.0"),
         api_port=_get_env_int("API_PORT", 8000),
         api_secret_key=os.getenv("API_SECRET_KEY", "change-me"),

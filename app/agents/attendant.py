@@ -1,7 +1,7 @@
 """Main attendant agent - orchestrates the full conversation flow."""
 
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from app.agents.router import (
     BUSINESS_DAYS,
@@ -20,11 +20,7 @@ from app.memory.user_memory import (
     set_stage,
 )
 from app.rag.chain import generate_response
-from app.scheduling.oncehub import (
-    fetch_available_slots,
-    get_scheduling_message,
-    is_oncehub_configured,
-)
+from app.scheduling.oncehub import get_scheduling_message
 
 WEEKDAYS_PT = ["segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo"]
 QUALIFICATION_FIELD_LABELS = {
@@ -221,7 +217,7 @@ class AttendantAgent:
 
         missing_fields = self._get_missing_fields(profile)
         recently_requested_fields = self._infer_recently_requested_fields(history)
-        slot_suggestions = await self._suggest_slot_options(profile, dt_info, intent, new_stage)
+        slot_suggestions: list[str] = []
         conversation_guidance = self._build_conversation_guidance(
             text=text,
             profile=profile,
@@ -271,18 +267,12 @@ class AttendantAgent:
             response = response.replace("[AGENDAR]", "").strip()
             if allow_scheduling_link:
                 nome = profile.get("name", "")
-                response = self._ensure_slot_options(response, slot_suggestions)
                 response = self._append_scheduling_message(response, nome)
         elif intent == "scheduling" and new_stage == "agendamento" and allow_scheduling_link:
             nome = profile.get("name", "")
-            response = self._ensure_slot_options(response, slot_suggestions)
             response = self._append_scheduling_message(response, nome)
 
         response = self._normalize_response(response)
-
-        if slot_suggestions:
-            profile["suggested_slots"] = [{"display": label} for label in slot_suggestions]
-            profile["suggested_slots_updated_at"] = datetime.now().isoformat()
 
         profile["lead_status"] = self._determine_lead_status(profile, new_stage)
         profile["ai_summary"] = self._build_lead_summary(profile, new_stage, history, text)
@@ -477,12 +467,6 @@ class AttendantAgent:
                 "Foque APENAS em coletar os dados faltantes de forma natural e empática."
             )
 
-        if slot_suggestions:
-            parts.append(
-                f"- Se oferecer horários, use estas duas opções exatas: {slot_suggestions[0]} ou {slot_suggestions[1]}."
-            )
-            parts.append("- Não invente outros horários além dessas opções.")
-
         if intent == "qualification" and priority_missing_fields:
             parts.append("- Evite pedir todos os dados de uma vez. Priorize no máximo dois.")
         if intent == "scheduling" and not self._has_minimum_qualification(profile):
@@ -493,8 +477,7 @@ class AttendantAgent:
             )
         if intent == "scheduling" and dt_info and dt_info.is_valid and dt_info.is_business_hours:
             parts.append(
-                "- Se o lead escolheu um horário válido, não diga que já reservou, bloqueou, "
-                "confirmou ou enviou detalhes. Oriente apenas a confirmar esse horário no link."
+                "- Se o lead citar um horário válido, diga que ele pode conferir e escolher esse horário direto no link da agenda."
             )
 
         return "\n".join(parts)
@@ -531,26 +514,6 @@ class AttendantAgent:
     def _should_offer_scheduling_link(self, profile: dict, current_stage: str) -> bool:
         return current_stage in {"oferta_consulta", "tratamento_objecao", "agendamento", "confirmacao_consulta"}
 
-    async def _suggest_slot_options(
-        self,
-        profile: dict,
-        dt_info: DateTimeInfo | None,
-        intent: str,
-        current_stage: str,
-    ) -> list[str]:
-        fallback = self._suggest_business_slots(dt_info, intent, current_stage)
-        if current_stage not in {"oferta_consulta", "tratamento_objecao", "agendamento", "confirmacao_consulta"}:
-            return fallback
-        if not self._has_minimum_qualification(profile):
-            return fallback
-        if not is_oncehub_configured():
-            return fallback
-
-        preferred_at = dt_info.resolved_date if dt_info and dt_info.is_valid and dt_info.resolved_date else None
-        live_slots = await fetch_available_slots(preferred_at=preferred_at, limit=2)
-        live_labels = [slot.format_display() for slot in live_slots]
-        return live_labels or fallback
-
     def _time_based_greeting(self) -> str:
         hour = datetime.now().hour
         if hour < 12:
@@ -558,62 +521,6 @@ class AttendantAgent:
         if hour < 18:
             return "boa tarde"
         return "boa noite"
-
-    def _suggest_business_slots(
-        self,
-        dt_info: DateTimeInfo | None,
-        intent: str,
-        current_stage: str,
-    ) -> list[str]:
-        if current_stage not in {"oferta_consulta", "tratamento_objecao", "agendamento", "confirmacao_consulta"}:
-            return []
-
-        slots: list[str] = []
-        if dt_info and dt_info.is_valid and dt_info.is_business_hours and dt_info.resolved_date:
-            slots.append(dt_info.format_display())
-            candidate = dt_info.resolved_date + timedelta(hours=2)
-        elif dt_info and dt_info.resolved_date:
-            candidate = self._normalize_to_business_slot(dt_info.resolved_date)
-        else:
-            candidate = self._normalize_to_business_slot(datetime.now())
-
-        while len(slots) < 2:
-            candidate = self._normalize_to_business_slot(candidate)
-            formatted = self._format_slot(candidate)
-            if formatted not in slots:
-                slots.append(formatted)
-            candidate = self._next_slot_candidate(candidate)
-
-        return slots[:2]
-
-    def _normalize_to_business_slot(self, candidate: datetime) -> datetime:
-        normalized = candidate.replace(second=0, microsecond=0)
-        if normalized.minute not in {0, 30}:
-            if normalized.minute < 30:
-                normalized = normalized.replace(minute=30)
-            else:
-                normalized = (normalized + timedelta(hours=1)).replace(minute=0)
-
-        if normalized.weekday() not in BUSINESS_DAYS:
-            while normalized.weekday() not in BUSINESS_DAYS:
-                normalized += timedelta(days=1)
-            return normalized.replace(hour=BUSINESS_HOUR_START, minute=0)
-
-        if normalized.hour < BUSINESS_HOUR_START:
-            return normalized.replace(hour=BUSINESS_HOUR_START, minute=0)
-        if normalized.hour >= BUSINESS_HOUR_END:
-            next_day = normalized + timedelta(days=1)
-            while next_day.weekday() not in BUSINESS_DAYS:
-                next_day += timedelta(days=1)
-            return next_day.replace(hour=BUSINESS_HOUR_START, minute=0)
-        return normalized
-
-    def _next_slot_candidate(self, candidate: datetime) -> datetime:
-        return candidate + timedelta(hours=2)
-
-    def _format_slot(self, candidate: datetime) -> str:
-        weekday = WEEKDAYS_PT[candidate.weekday()]
-        return f"{weekday}, {candidate.strftime('%d/%m')} às {candidate.strftime('%H:%M')}"
 
     def _is_out_of_hours_request(self, dt_info: DateTimeInfo | None) -> bool:
         if not dt_info:
@@ -626,15 +533,10 @@ class AttendantAgent:
 
     def _build_out_of_hours_response(self, name: str, slot_suggestions: list[str]) -> str:
         prefix = f"{name}, " if name else ""
-        if len(slot_suggestions) >= 2:
-            return (
-                f"{prefix}esse horário fica fora do nosso atendimento, que acontece de segunda a "
-                f"sexta, das {BUSINESS_HOUR_START:02d}h às {BUSINESS_HOUR_END:02d}h.\n\n"
-                f"Posso te sugerir {slot_suggestions[0]} ou {slot_suggestions[1]}?"
-            )
         return (
             f"{prefix}esse horário fica fora do nosso atendimento, que acontece de segunda a "
-            f"sexta, das {BUSINESS_HOUR_START:02d}h às {BUSINESS_HOUR_END:02d}h."
+            f"sexta, das {BUSINESS_HOUR_START:02d}h às {BUSINESS_HOUR_END:02d}h.\n\n"
+            "Para avançar, escolha um horário disponível direto no link da agenda abaixo."
         )
 
     def _build_in_hours_scheduling_response(self, name: str, dt_info: DateTimeInfo) -> str:
@@ -642,8 +544,7 @@ class AttendantAgent:
         selected = dt_info.format_display()
         return (
             f"{prefix}esse horário está dentro do nosso atendimento.\n\n"
-            f"Para confirmar a consulta, selecione {selected} no link abaixo. "
-            "Se esse horário não aparecer disponível, escolha a opção mais próxima."
+            f"Você pode verificar na agenda se {selected} está disponível e escolher o melhor horário direto no link abaixo."
         )
 
     def _build_offer_consulta_response(
@@ -666,35 +567,21 @@ class AttendantAgent:
             context_bits.append(f"contratado em {ano}")
         context = ", ".join(context_bits)
 
-        if len(slot_suggestions) >= 2:
-            return (
-                f"{prefix}com base no que você me contou sobre o {context}, esse reajuste merece "
-                "uma análise cuidadosa.\n\n"
-                "Na consulta, o Dr. Filipe pode verificar se esse aumento pode ser questionado "
-                "e quais caminhos podem fazer sentido no seu caso.\n\n"
-                f"Quer que eu te envie {slot_suggestions[0]} ou {slot_suggestions[1]}?"
-            )
-
         return (
             f"{prefix}com base no que você me contou sobre o {context}, esse reajuste merece "
             "uma análise cuidadosa.\n\n"
             "Na consulta, o Dr. Filipe pode verificar se esse aumento pode ser questionado "
-            "e quais caminhos podem fazer sentido no seu caso."
+            "e quais caminhos podem fazer sentido no seu caso.\n\n"
+            "Se quiser avançar, escolha o melhor horário direto na agenda."
         )
 
     def _build_cancellation_fear_response(self, name: str, slot_suggestions: list[str]) -> str:
         prefix = f"{name}, " if name else ""
-        if len(slot_suggestions) >= 2:
-            return (
-                f"{prefix}esse receio é comum, e o mais prudente é analisar o caso antes de qualquer medida.\n\n"
-                "Na consulta, o Dr. Filipe pode explicar quais caminhos costumam ser usados para "
-                "preservar o contrato e reduzir riscos durante a discussão do reajuste.\n\n"
-                f"Quer que eu te envie {slot_suggestions[0]} ou {slot_suggestions[1]}?"
-            )
         return (
             f"{prefix}esse receio é comum, e o mais prudente é analisar o caso antes de qualquer medida.\n\n"
             "Na consulta, o Dr. Filipe pode explicar quais caminhos costumam ser usados para "
-            "preservar o contrato e reduzir riscos durante a discussão do reajuste."
+            "preservar o contrato e reduzir riscos durante a discussão do reajuste.\n\n"
+            "Se quiser, você pode escolher o melhor horário direto na agenda."
         )
 
     def _format_currency_value(self, value: str | None) -> str | None:
@@ -706,14 +593,6 @@ class AttendantAgent:
             return None
         formatted = f"{numeric:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
         return f"R${formatted}"
-
-    def _ensure_slot_options(self, response: str, slot_suggestions: list[str]) -> str:
-        if len(slot_suggestions) < 2 or self._response_has_slot_options(response):
-            return response
-        return (
-            f"{response}\n\n"
-            f"Posso te sugerir estes horários: {slot_suggestions[0]} ou {slot_suggestions[1]}?"
-        )
 
     def _append_scheduling_message(self, response: str, name: str) -> str:
         cleaned = re.sub(
@@ -740,24 +619,6 @@ class AttendantAgent:
         if not cleaned_response:
             return scheduling_message
         return f"{cleaned_response}\n\n{scheduling_message}"
-
-    def _response_has_slot_options(self, response: str) -> bool:
-        normalized_times = self._extract_time_mentions(response)
-        has_date = re.search(r"\b\d{1,2}/\d{1,2}\b", response)
-        has_weekday = any(day in response.lower() for day in WEEKDAYS_PT)
-        if len(normalized_times) >= 2:
-            return True
-        return bool(normalized_times and (has_date or has_weekday))
-
-    def _extract_time_mentions(self, response: str) -> set[str]:
-        matches = re.findall(
-            r"\b\d{1,2}:\d{2}\b|\b\d{1,2}h(?:\d{2})?\b|\bàs\s+\d{1,2}(?::\d{2})?\b",
-            response.lower(),
-        )
-        normalized = set()
-        for match in matches:
-            normalized.add(match.replace("às", "").strip())
-        return normalized
 
     def _normalize_response(self, response: str) -> str:
         response = response.replace("\r\n", "\n")
@@ -818,9 +679,7 @@ class AttendantAgent:
     def _determine_lead_status(self, profile: dict, stage: str) -> str:
         if profile.get("handoff_requested"):
             return "waiting_human"
-        if profile.get("scheduled_booking_id"):
-            return "scheduled"
-        if stage in {"agendamento", "confirmacao_consulta"}:
+        if stage == "confirmacao_consulta":
             return "scheduled"
         if stage in {"fechamento", "indicacao_ativa"}:
             return "won"
@@ -853,9 +712,6 @@ class AttendantAgent:
         if ano:
             pieces.append(f"contrato {ano}")
 
-        if profile.get("scheduled_start_at"):
-            pieces.append(f"consulta {self._format_datetime_summary(profile['scheduled_start_at'])}")
-
         pieces.append(f"etapa {stage.replace('_', ' ')}")
 
         if profile.get("handoff_reason"):
@@ -872,12 +728,3 @@ class AttendantAgent:
             pieces.append(f"última demanda: {recent_user_lines[-1][:120]}")
 
         return " | ".join(pieces[:6])
-
-    def _format_datetime_summary(self, value: str) -> str:
-        normalized = value.replace("Z", "+00:00")
-        try:
-            parsed = datetime.fromisoformat(normalized)
-        except ValueError:
-            return value
-        local = parsed.astimezone()
-        return local.strftime("%d/%m às %H:%M")

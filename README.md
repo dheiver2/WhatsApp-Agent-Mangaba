@@ -42,12 +42,7 @@ PHONE_LOCK_WAIT_SECONDS=120
 PHONE_LOCK_TTL_SECONDS=360
 MESSAGE_PROCESSING_TTL_SECONDS=360
 MESSAGE_DEDUP_TTL_SECONDS=86400
-ONCEHUB_API_KEY=
-ONCEHUB_API_BASE_URL=https://api.oncehub.com
-ONCEHUB_BOOKING_URL=https://oncehub.com/PAGE-83B77E38F9
-ONCEHUB_BOOKING_CALENDAR_ID=
-ONCEHUB_WEBHOOK_SECRET=
-ONCEHUB_SLOT_LOOKAHEAD_DAYS=14
+ONCEHUB_BOOKING_URL=https://oncehub.com/.ELW9PXD6B54K
 API_HOST=0.0.0.0
 API_PORT=8000
 API_SECRET_KEY=change-me
@@ -179,17 +174,11 @@ Endpoints úteis da API:
 - `POST /api/v1/message`
 - `GET /api/v1/leads`
 - `GET /api/v1/leads/{phone}`
-- `GET /api/v1/oncehub/slots`
-- `POST /api/v1/oncehub/webhook`
 - `GET /api/v1/knowledge/chunks`
 - `GET /api/v1/knowledge/graph`
 - `GET /api/v1/knowledge/search?q=plano&top_k=5`
 
-Para ativar disponibilidade real e confirmação automática do OnceHub:
-
-- preencha `ONCEHUB_API_KEY` e `ONCEHUB_BOOKING_CALENDAR_ID` no `.env`
-- cadastre o webhook do OnceHub apontando para `POST /api/v1/oncehub/webhook`
-- se usar assinatura no webhook, configure o mesmo segredo em `ONCEHUB_WEBHOOK_SECRET`
+O agendamento usa somente o link do OnceHub em `ONCEHUB_BOOKING_URL`. O assistente pede que o cliente escolha o melhor dia e horário diretamente nessa agenda.
 
 ## Estrutura do projeto
 

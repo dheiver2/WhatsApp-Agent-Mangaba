@@ -1,7 +1,4 @@
-"""Starlette application - main entry point."""
-
 import asyncio
-import json
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -16,26 +13,15 @@ from app.config import get_settings
 from app.memory.user_memory import (
     ConversationLockTimeoutError,
     StorageUnavailableError,
-    add_to_history,
     ensure_storage_ready,
     get_all_active_users,
     get_chat_history,
     get_stage,
     get_user_profile,
-    save_user_profile,
-    set_stage,
 )
 from app.rag.vectorstore import load_knowledge_base
 from app.rag.visualization import get_all_chunks, get_graph_data, search_with_details
-from app.scheduling.oncehub import (
-    fetch_available_slots,
-    format_confirmation_message,
-    get_booking_link,
-    parse_booking_confirmation,
-    verify_webhook_signature,
-)
 from app.whatsapp.handlers import IncomingMessage, handle_message
-from app.whatsapp.sender import send_whatsapp_text
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -179,104 +165,6 @@ async def get_lead(request: Request) -> JSONResponse:
     )
 
 
-async def oncehub_slots(_request: Request) -> JSONResponse:
-    slots = await fetch_available_slots(limit=6)
-    return JSONResponse(
-        {
-            "configured": bool(slots) or bool(get_settings().oncehub_booking_calendar_id and get_settings().oncehub_api_key),
-            "booking_link": get_booking_link(),
-            "slots": [{"display": slot.format_display(), "start_at": slot.iso_start} for slot in slots],
-        }
-    )
-
-
-def _normalize_phone_digits(value: str) -> str:
-    return "".join(ch for ch in value if ch.isdigit())
-
-
-async def _match_active_phone(phone: str) -> str:
-    normalized = _normalize_phone_digits(phone)
-    if not normalized:
-        return ""
-    active_phones = await get_all_active_users()
-    for active_phone in active_phones:
-        active_normalized = _normalize_phone_digits(active_phone)
-        if active_normalized == normalized:
-            return active_phone
-    for active_phone in active_phones:
-        active_normalized = _normalize_phone_digits(active_phone)
-        if active_normalized.endswith(normalized) or normalized.endswith(active_normalized):
-            return active_phone
-    return ""
-
-
-async def oncehub_webhook(request: Request) -> JSONResponse:
-    raw_body = await request.body()
-    signature = (
-        request.headers.get("x-oncehub-signature")
-        or request.headers.get("oncehub-signature")
-        or request.headers.get("x-signature")
-        or ""
-    )
-    if not verify_webhook_signature(raw_body, signature):
-        return _json_error("Invalid OnceHub webhook signature", 401)
-
-    try:
-        payload = json.loads(raw_body.decode("utf-8"))
-    except json.JSONDecodeError:
-        return _json_error("Invalid JSON payload", 400)
-
-    confirmation = parse_booking_confirmation(payload)
-    if confirmation is None:
-        return JSONResponse({"received": True, "handled": False})
-
-    phone = await _match_active_phone(confirmation.phone)
-    if not phone:
-        return JSONResponse(
-            {
-                "received": True,
-                "handled": False,
-                "reason": "lead_not_found",
-                "booking_id": confirmation.booking_id,
-            }
-        )
-
-    profile = await get_user_profile(phone)
-    stage = await get_stage(phone)
-    profile["scheduled_booking_id"] = confirmation.booking_id
-    profile["scheduled_start_at"] = confirmation.start_at.isoformat() if confirmation.start_at else ""
-    profile["scheduled_end_at"] = confirmation.end_at.isoformat() if confirmation.end_at else ""
-    profile["lead_status"] = "scheduled"
-    profile["handoff_requested"] = False
-    profile["handoff_reason"] = ""
-    profile["handoff_updated_at"] = datetime.now().isoformat()
-    if confirmation.start_at:
-        local_start = confirmation.start_at.astimezone().strftime("%d/%m às %H:%M")
-        profile["ai_summary"] = f"{profile.get('name', 'Lead')} | consulta confirmada para {local_start}"
-    else:
-        profile["ai_summary"] = f"{profile.get('name', 'Lead')} | consulta confirmada"
-
-    if confirmation.invitee_name and not profile.get("name"):
-        profile["name"] = confirmation.invitee_name
-
-    confirmation_message = format_confirmation_message(profile.get("name", ""), confirmation.start_at)
-
-    await save_user_profile(phone, profile)
-    await set_stage(phone, "confirmacao_consulta")
-    await add_to_history(phone, "assistant", confirmation_message)
-    await send_whatsapp_text(phone, confirmation_message)
-
-    return JSONResponse(
-        {
-            "received": True,
-            "handled": True,
-            "phone": phone,
-            "previous_stage": stage,
-            "new_stage": "confirmacao_consulta",
-        }
-    )
-
-
 async def ops_summary(_request: Request) -> JSONResponse:
     leads = await _collect_leads()
     stage_counts: dict[str, int] = {}
@@ -353,8 +241,6 @@ routes = [
     Route("/api/v1/health", health, methods=["GET"]),
     Route("/api/v1/leads", list_leads, methods=["GET"]),
     Route("/api/v1/leads/{phone:str}", get_lead, methods=["GET"]),
-    Route("/api/v1/oncehub/slots", oncehub_slots, methods=["GET"]),
-    Route("/api/v1/oncehub/webhook", oncehub_webhook, methods=["POST"]),
     Route("/api/v1/ops/summary", ops_summary, methods=["GET"]),
     Route("/api/v1/knowledge/chunks", knowledge_chunks, methods=["GET"]),
     Route("/api/v1/knowledge/graph", knowledge_graph, methods=["GET"]),
