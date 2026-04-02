@@ -36,12 +36,18 @@ O projeto lê um arquivo `.env` na raiz. Se precisar recriar esse arquivo, use e
 OPENROUTER_API_KEY=
 OPENROUTER_MODEL=deepseek/deepseek-chat-v3-0324
 REDIS_URL=redis://localhost:6379/0
+WHATSAPP_SERVICE_URL=http://localhost:3001
 REDIS_PING_INTERVAL_SECONDS=5
 PHONE_LOCK_WAIT_SECONDS=120
 PHONE_LOCK_TTL_SECONDS=360
 MESSAGE_PROCESSING_TTL_SECONDS=360
 MESSAGE_DEDUP_TTL_SECONDS=86400
+ONCEHUB_API_KEY=
+ONCEHUB_API_BASE_URL=https://api.oncehub.com
 ONCEHUB_BOOKING_URL=https://oncehub.com/PAGE-83B77E38F9
+ONCEHUB_BOOKING_CALENDAR_ID=
+ONCEHUB_WEBHOOK_SECRET=
+ONCEHUB_SLOT_LOOKAHEAD_DAYS=14
 API_HOST=0.0.0.0
 API_PORT=8000
 API_SECRET_KEY=change-me
@@ -173,9 +179,17 @@ Endpoints úteis da API:
 - `POST /api/v1/message`
 - `GET /api/v1/leads`
 - `GET /api/v1/leads/{phone}`
+- `GET /api/v1/oncehub/slots`
+- `POST /api/v1/oncehub/webhook`
 - `GET /api/v1/knowledge/chunks`
 - `GET /api/v1/knowledge/graph`
 - `GET /api/v1/knowledge/search?q=plano&top_k=5`
+
+Para ativar disponibilidade real e confirmação automática do OnceHub:
+
+- preencha `ONCEHUB_API_KEY` e `ONCEHUB_BOOKING_CALENDAR_ID` no `.env`
+- cadastre o webhook do OnceHub apontando para `POST /api/v1/oncehub/webhook`
+- se usar assinatura no webhook, configure o mesmo segredo em `ONCEHUB_WEBHOOK_SECRET`
 
 ## Estrutura do projeto
 

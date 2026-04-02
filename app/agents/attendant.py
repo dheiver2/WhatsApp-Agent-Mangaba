@@ -20,7 +20,11 @@ from app.memory.user_memory import (
     set_stage,
 )
 from app.rag.chain import generate_response
-from app.scheduling.oncehub import get_scheduling_message
+from app.scheduling.oncehub import (
+    fetch_available_slots,
+    get_scheduling_message,
+    is_oncehub_configured,
+)
 
 WEEKDAYS_PT = ["segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo"]
 QUALIFICATION_FIELD_LABELS = {
@@ -43,6 +47,17 @@ META_RESPONSE_PATTERNS = (
     r"confirmação de viabilidade|confirmacao de viabilidade).*\)\s*$",
     r"^\s*usei\s+.*$",
     r"^\s*observações?\s+estratégicas?:?\s*$",
+)
+HUMAN_HANDOFF_PATTERNS = (
+    r"\batendente\b",
+    r"\bhumano\b",
+    r"\balgu[eé]m da equipe\b",
+    r"\bfalar com (?:uma )?pessoa\b",
+    r"\bfalar com (?:um )?atendente\b",
+    r"\bquero falar com (?:um )?humano\b",
+    r"\bme liga\b",
+    r"\bme ligue\b",
+    r"\bliga pra mim\b",
 )
 SOFTENING_REPLACEMENTS = (
     (r"\bclaramente abusiv[oa]\b", "com sinais de possível abuso"),
@@ -159,6 +174,20 @@ class AttendantAgent:
         current_stage = await get_stage(phone)
         history = await get_chat_history(phone)
 
+        if self._is_human_handoff_request(text):
+            profile["handoff_requested"] = True
+            profile["handoff_reason"] = self._infer_handoff_reason(text)
+            profile["handoff_updated_at"] = datetime.now().isoformat()
+            profile["lead_status"] = "waiting_human"
+            profile["ai_summary"] = self._build_lead_summary(profile, current_stage, history, text)
+
+            response = self._build_handoff_response(profile.get("name", ""))
+            await add_to_history(phone, "user", text)
+            await save_user_profile(phone, profile)
+            await set_stage(phone, current_stage)
+            await add_to_history(phone, "assistant", response)
+            return {"reply": response, "stage": current_stage, "intent": "human_handoff"}
+
         # 2. Classify intent and extract data
         intent = self.router.classify_intent(text)
         objection_type = self.router.detect_objection_type(text)
@@ -192,7 +221,7 @@ class AttendantAgent:
 
         missing_fields = self._get_missing_fields(profile)
         recently_requested_fields = self._infer_recently_requested_fields(history)
-        slot_suggestions = self._suggest_business_slots(dt_info, intent, new_stage)
+        slot_suggestions = await self._suggest_slot_options(profile, dt_info, intent, new_stage)
         conversation_guidance = self._build_conversation_guidance(
             text=text,
             profile=profile,
@@ -250,6 +279,13 @@ class AttendantAgent:
             response = self._append_scheduling_message(response, nome)
 
         response = self._normalize_response(response)
+
+        if slot_suggestions:
+            profile["suggested_slots"] = [{"display": label} for label in slot_suggestions]
+            profile["suggested_slots_updated_at"] = datetime.now().isoformat()
+
+        profile["lead_status"] = self._determine_lead_status(profile, new_stage)
+        profile["ai_summary"] = self._build_lead_summary(profile, new_stage, history, text)
 
         # 10. Save state
         await save_user_profile(phone, profile)
@@ -495,6 +531,26 @@ class AttendantAgent:
     def _should_offer_scheduling_link(self, profile: dict, current_stage: str) -> bool:
         return current_stage in {"oferta_consulta", "tratamento_objecao", "agendamento", "confirmacao_consulta"}
 
+    async def _suggest_slot_options(
+        self,
+        profile: dict,
+        dt_info: DateTimeInfo | None,
+        intent: str,
+        current_stage: str,
+    ) -> list[str]:
+        fallback = self._suggest_business_slots(dt_info, intent, current_stage)
+        if current_stage not in {"oferta_consulta", "tratamento_objecao", "agendamento", "confirmacao_consulta"}:
+            return fallback
+        if not self._has_minimum_qualification(profile):
+            return fallback
+        if not is_oncehub_configured():
+            return fallback
+
+        preferred_at = dt_info.resolved_date if dt_info and dt_info.is_valid and dt_info.resolved_date else None
+        live_slots = await fetch_available_slots(preferred_at=preferred_at, limit=2)
+        live_labels = [slot.format_display() for slot in live_slots]
+        return live_labels or fallback
+
     def _time_based_greeting(self) -> str:
         hour = datetime.now().hour
         if hour < 12:
@@ -739,3 +795,89 @@ class AttendantAgent:
         for pattern, replacement in SOFTENING_REPLACEMENTS:
             softened = re.sub(pattern, replacement, softened, flags=re.IGNORECASE)
         return softened
+
+    def _is_human_handoff_request(self, text: str) -> bool:
+        text_lower = text.lower()
+        return any(re.search(pattern, text_lower) for pattern in HUMAN_HANDOFF_PATTERNS)
+
+    def _infer_handoff_reason(self, text: str) -> str:
+        text_lower = text.lower()
+        if "lig" in text_lower:
+            return "cliente pediu contato humano por ligação"
+        if "atendente" in text_lower or "humano" in text_lower or "pessoa" in text_lower:
+            return "cliente pediu atendimento humano"
+        return "cliente pediu apoio da equipe"
+
+    def _build_handoff_response(self, name: str) -> str:
+        prefix = f"{name}, " if name else ""
+        return (
+            f"{prefix}vou deixar seu atendimento sinalizado para a nossa equipe continuar com você.\n\n"
+            "Já registrei seu contexto aqui para facilitar o próximo passo e evitar que você precise repetir tudo."
+        )
+
+    def _determine_lead_status(self, profile: dict, stage: str) -> str:
+        if profile.get("handoff_requested"):
+            return "waiting_human"
+        if profile.get("scheduled_booking_id"):
+            return "scheduled"
+        if stage in {"agendamento", "confirmacao_consulta"}:
+            return "scheduled"
+        if stage in {"fechamento", "indicacao_ativa"}:
+            return "won"
+        return "ai_active"
+
+    def _build_lead_summary(
+        self,
+        profile: dict,
+        stage: str,
+        history: list[dict],
+        latest_user_message: str,
+    ) -> str:
+        pieces: list[str] = []
+        name = profile.get("name")
+        if name:
+            pieces.append(name)
+
+        operadora = profile.get("operadora")
+        tipo_plano = profile.get("tipo_plano")
+        if operadora or tipo_plano:
+            plan_context = " / ".join(part for part in [operadora, tipo_plano] if part)
+            pieces.append(plan_context)
+
+        before = self._format_currency_value(profile.get("valor_antes"))
+        after = self._format_currency_value(profile.get("valor_depois"))
+        if before and after:
+            pieces.append(f"reajuste {before} -> {after}")
+
+        ano = profile.get("ano_contratacao")
+        if ano:
+            pieces.append(f"contrato {ano}")
+
+        if profile.get("scheduled_start_at"):
+            pieces.append(f"consulta {self._format_datetime_summary(profile['scheduled_start_at'])}")
+
+        pieces.append(f"etapa {stage.replace('_', ' ')}")
+
+        if profile.get("handoff_reason"):
+            pieces.append(profile["handoff_reason"])
+
+        recent_user_lines = [
+            msg.get("content", "").strip()
+            for msg in history[-4:]
+            if msg.get("role") == "user" and msg.get("content", "").strip()
+        ]
+        if latest_user_message.strip():
+            recent_user_lines.append(latest_user_message.strip())
+        if recent_user_lines:
+            pieces.append(f"última demanda: {recent_user_lines[-1][:120]}")
+
+        return " | ".join(pieces[:6])
+
+    def _format_datetime_summary(self, value: str) -> str:
+        normalized = value.replace("Z", "+00:00")
+        try:
+            parsed = datetime.fromisoformat(normalized)
+        except ValueError:
+            return value
+        local = parsed.astimezone()
+        return local.strftime("%d/%m às %H:%M")
