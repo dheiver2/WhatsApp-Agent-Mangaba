@@ -15,7 +15,7 @@ Depois que o cliente mandar os contatos:
 Contato com os indicados
 Mensagem de abordagem:
 "Olá, [nome]. Tudo bem? Aqui é o Dr. Filipe Andrade, advogado. O [nome do cliente] comentou de você comigo e estou entrando em contato. Ele disse que você pode estar passando por uma situação parecida com a dele em relação ao Plano de Saúde. Disponibilizei um horário um bate-papo rápido para eu te explicar como podemos te ajudar a resolver isso."
-*Dar duas opções de horários.
+*Enviar o link da agenda para a pessoa escolher o melhor horário.
 
 Momentos estratégicos para pedir indicação:
 - Logo após uma vitória ou avanço (ex.: renegociação bem-sucedida, liminar favorável).

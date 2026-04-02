@@ -5,12 +5,12 @@ Dia 1 – Direto, humano e objetivo
 Olá, [Nome]! Tudo bem?
 Pelo que você nos contou até aqui, o seu caso apresenta elementos que merecem análise jurídica.
 O próximo passo é agendarmos sua consulta para te explicar como funciona essa análise, os caminhos possíveis e os cuidados com o contrato.
-Posso te sugerir um horário com o Dr. Filipe?
+Se quiser avançar, posso te enviar o link da agenda para você escolher o melhor horário.
 
 Dia 2 – Reforço de valor (economia + proteção)
 Olá, [Nome]! Passando para te reforçar:
 Quanto antes a gente faz essa análise, mais cedo você entende se esse valor pode merecer revisão e quais medidas podem fazer sentido no seu caso.
-Quer que eu veja os horários disponíveis para você?
+Quer que eu te envie o link da agenda para você escolher o melhor horário?
 
 Dia 3 – Autoridade + normalização do problema
 [Nome], esse tipo de reajuste que você sofreu tem acontecido com muita frequência.
@@ -24,7 +24,7 @@ Faz sentido marcarmos para essa semana?
 
 Dia 5 – Pergunta aberta + condução
 [Nome], ficou alguma dúvida que eu possa esclarecer antes da consulta?
-Se preferir, posso te enviar as opções de horário e você escolhe a que fizer mais sentido.
+Se preferir, posso te enviar o link da agenda e você escolhe o horário que fizer mais sentido.
 
 Dia 6 – Segurança jurídica explícita
 Só para te tranquilizar:
@@ -33,10 +33,10 @@ Quando podemos conversar com calma na consulta?
 
 Dia 7 – Escassez real + decisão
 [Nome], hoje estamos finalizando os horários dessa semana para análise de reajuste.
-Quer que eu te envie as opções disponíveis agora ou prefere que eu te procure em outro momento?
+Quer que eu te envie o link da agenda agora ou prefere que eu te procure em outro momento?
 
 Observações estratégicas:
 - Sempre usar nome da pessoa
 - Nunca falar em "fechar contrato" → sempre "consulta", "análise", "próximo passo"
-- Se responder com qualquer brecha ("pode ser", "acho que sim", "me liga depois") → OU/OU imediato
+- Se responder com qualquer brecha ("pode ser", "acho que sim", "me liga depois") → enviar o link da agenda imediatamente
 - Se não responder no Dia 7 → lead vai para follow-up de longo prazo

@@ -48,8 +48,8 @@ API_PORT=8000
 API_SECRET_KEY=change-me
 WHATSAPP_API_URL=http://localhost:8000
 QR_SERVER_PORT=3001
-AGENT_NAME=Andrade & Lemos
-AGENT_PERSONA=Assistente juridico especializado em reajuste de plano de saude
+AGENT_NAME=Natasha
+AGENT_PERSONA=Natasha, assistente juridica do escritorio Andrade & Lemos, feminina, carismatica, acolhedora e especializada em reajuste de plano de saude
 MAX_FOLLOWUP_DAYS=7
 RESPONSE_TIMEOUT_SECONDS=300
 ```

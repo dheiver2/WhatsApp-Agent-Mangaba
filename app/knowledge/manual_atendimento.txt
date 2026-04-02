@@ -45,7 +45,7 @@ O objetivo é entender o contexto, os elementos jurídicos e o nível de urgênc
 Etapa 3 – Oferta de Consulta
 [Nome], casos como o seu estão acontecendo com frequência.
 Podemos marcar uma análise gratuita para verificar se esse aumento pode ser questionado e qual pode ser o melhor caminho para o seu caso.
-Tenho horário [opção 1] ou [opção 2]. Qual é melhor para você?
+Você pode escolher o melhor dia e horário direto no link da agenda.
 
 Etapa 4 – Confirmação da Consulta
 1 dia antes:
@@ -84,9 +84,9 @@ O processo é simples, seguro e documental. Faz sentido seguirmos?
 Dia 7:
 Estamos com algumas vagas para análise hoje. Quer que eu te envie as opções disponíveis?
 
-4. SCRIPT DE PROPOSTA (OU/OU)
+4. SCRIPT DE PROPOSTA
 [Nome], posso analisar o seu reajuste e te orientar corretamente.
-Você prefere marcar amanhã às 14h ou quinta às 10h?
+Escolha o melhor dia e horário direto no link da agenda.
 
 5. BOAS PRÁTICAS
 - Tom consultivo, seguro e humano

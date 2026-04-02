@@ -58,10 +58,10 @@ def get_settings() -> Settings:
         api_host=os.getenv("API_HOST", "0.0.0.0"),
         api_port=_get_env_int("API_PORT", 8000),
         api_secret_key=os.getenv("API_SECRET_KEY", "change-me"),
-        agent_name=os.getenv("AGENT_NAME", "Andrade & Lemos"),
+        agent_name=os.getenv("AGENT_NAME", "Natasha"),
         agent_persona=os.getenv(
             "AGENT_PERSONA",
-            "Assistente jurídico especializado em reajuste de plano de saúde",
+            "Natasha, assistente jurídica do escritório Andrade & Lemos, feminina, carismática, acolhedora e especializada em reajuste de plano de saúde",
         ),
         max_followup_days=_get_env_int("MAX_FOLLOWUP_DAYS", 7),
         response_timeout_seconds=_get_env_int("RESPONSE_TIMEOUT_SECONDS", 300),
