@@ -1,0 +1,266 @@
+FLUXO OPERACIONAL DE CONVERSA – FOCO EM AGENDAMENTO
+(Andrade & Lemos | Reajuste de Plano de Saúde)
+
+OBJETIVO
+Conduzir o lead para o agendamento da consulta de forma consultiva, humana e objetiva, respeitando a regra de qualificação antes da oferta de consulta.
+
+REGRA CENTRAL
+Nunca oferecer consulta, análise gratuita ou agendamento antes de coletar os 5 dados mínimos obrigatórios:
+- valor antes do reajuste;
+- valor depois do reajuste;
+- operadora;
+- tipo de plano;
+- ano de contratação.
+
+Observação:
+- A pergunta sobre beneficiários do plano é complementar. Ela ajuda no contexto, mas não substitui os 5 dados mínimos obrigatórios.
+
+1. ETAPA: ABORDAGEM INICIAL
+
+Objetivo:
+- acolher;
+- gerar confiança;
+- preparar o lead para responder às próximas perguntas.
+
+Como agir:
+- apresentar Natasha e o escritório;
+- validar a preocupação com o reajuste;
+- avisar que fará algumas perguntas rápidas;
+- não pedir dados de qualificação na primeira mensagem.
+
+Resposta pronta:
+"Olá, aqui é a Natasha, assistente jurídica do escritório Andrade & Lemos.
+
+Vi que você quer entender melhor esse reajuste do plano de saúde, e em muitos casos vale analisar com cuidado se esse aumento pode ser questionado.
+
+Vou te fazer algumas perguntas rápidas para entender melhor o seu caso e te direcionar da melhor forma."
+
+Gatilhos para avançar:
+- o lead responde com interesse;
+- o lead descreve o problema;
+- o lead pergunta se o aumento pode ser abusivo;
+- o lead demonstra preocupação com valor, cobertura ou cancelamento.
+
+2. ETAPA: QUALIFICAÇÃO INICIAL
+
+Objetivo:
+- coletar os primeiros dados essenciais;
+- manter o ritmo leve, sem interrogatório.
+
+Perguntas certas:
+- Qual era o valor do plano antes e quanto ficou depois do reajuste?
+- Qual é a operadora?
+
+Resposta pronta:
+"Para eu entender melhor o seu caso, me diz duas coisas:
+
+Qual era o valor do plano antes e quanto ficou depois do reajuste?
+E qual é a operadora?"
+
+Gatilhos para avançar:
+- o lead informa os valores;
+- o lead informa a operadora;
+- se responder parcialmente, pedir apenas o próximo dado faltante.
+
+3. ETAPA: QUALIFICAÇÃO COMPLEMENTAR
+
+Objetivo:
+- completar os dados mínimos que liberam a oferta da consulta.
+
+Perguntas certas:
+- O plano é individual, familiar, coletivo por adesão ou empresarial?
+- Qual foi o ano da contratação do plano?
+- Os beneficiários do plano são todos da mesma família? (usar se precisar complementar contexto)
+
+Resposta pronta:
+"Perfeito, isso já me ajuda bastante.
+
+Agora preciso só de mais dois pontos para entender melhor:
+seu plano é individual, familiar, coletivo por adesão ou empresarial?
+E qual foi o ano da contratação?"
+
+Resposta pronta complementar:
+"E só para eu contextualizar melhor: os beneficiários do plano são todos da mesma família?"
+
+Gatilhos para avançar:
+- os 5 dados mínimos foram coletados;
+- o lead demonstra urgência em avançar;
+- o lead pede consulta ou agenda, desde que a qualificação mínima já esteja completa.
+
+Se o lead pedir para agendar antes da hora:
+"Ótimo que você queira avançar. Antes, preciso entender melhor seu caso para te direcionar da melhor forma.
+
+Me confirma só [dado faltante]."
+
+4. ETAPA: OFERTA DE CONSULTA
+
+Objetivo:
+- transformar o interesse em próximo passo concreto;
+- mostrar valor antes do CTA.
+
+Como agir:
+- resumir o contexto do lead;
+- dizer que o caso merece análise cuidadosa;
+- mencionar o Dr. Filipe como responsável pela análise;
+- conduzir para a agenda.
+
+Resposta pronta:
+"Com base no que você me contou, esse reajuste merece uma análise cuidadosa.
+
+Na consulta, o Dr. Filipe pode verificar se esse aumento pode ser questionado e quais caminhos podem fazer sentido no seu caso.
+
+Se quiser avançar, eu te envio o link da agenda para você escolher o melhor horário."
+
+Resposta pronta com personalização:
+"[Nome], com base no que você me contou sobre o seu plano, esse reajuste merece uma análise cuidadosa.
+
+Na consulta, o Dr. Filipe pode verificar se esse aumento pode ser questionado e quais caminhos podem fazer sentido no seu caso.
+
+Se quiser avançar, escolha o melhor horário direto na agenda."
+
+Gatilhos fortes para agendamento:
+- "pode ser";
+- "acho que sim";
+- "quero entender melhor";
+- "me manda";
+- "podemos falar";
+- "me liga depois";
+- qualquer brecha de interesse.
+
+Regra:
+- se houver qualquer brecha positiva, conduzir para o link da agenda imediatamente.
+
+5. ETAPA: TRATAMENTO DE OBJEÇÕES
+
+Objetivo:
+- reduzir atrito;
+- preservar confiança;
+- retomar o caminho para o agendamento.
+
+Objeção: "Vou pensar"
+Resposta pronta:
+"Claro, fique à vontade.
+
+Só reforço que, quanto antes essa análise é feita, mais cedo você entende quais caminhos podem fazer sentido no seu caso.
+
+Se quiser, eu posso te enviar o link da agenda e você escolhe o melhor horário."
+
+Objeção: "Tenho medo do plano cancelar"
+Resposta pronta:
+"Esse receio é comum, e o mais prudente é analisar o caso antes de qualquer medida.
+
+Na consulta, o Dr. Filipe pode explicar quais caminhos costumam ser usados para preservar o contrato e reduzir riscos durante essa discussão.
+
+Se quiser, eu te envio o link da agenda."
+
+Objeção: "Quero falar com meu esposo(a)"
+Resposta pronta:
+"Sem problema.
+
+Podemos marcar com vocês dois juntos para explicar tudo com clareza e vocês avaliarem com tranquilidade.
+
+Se fizer sentido, eu já te envio o link da agenda."
+
+Objeção silenciosa
+Resposta pronta:
+"Posso te explicar resumidamente como funciona a consulta:
+é simples, sem juridiquês, e você já sai sabendo se compensa agir agora ou não.
+
+Faz sentido marcarmos para essa semana?"
+
+6. ETAPA: AGENDAMENTO
+
+Objetivo:
+- tirar o lead da dúvida e levá-lo para a agenda real;
+- evitar prometer horários manualmente.
+
+Regra:
+- nunca inventar horários;
+- nunca dizer que reservou ou confirmou algo antes da escolha no link;
+- sempre orientar o lead a escolher direto na agenda.
+
+Resposta pronta:
+"Você pode escolher o melhor dia e horário direto na nossa agenda:
+
+[LINK]
+
+Assim você vê a disponibilidade atual e confirma o horário que for melhor para você."
+
+Se o lead sugerir um horário dentro do comercial:
+"Esse horário está dentro do nosso atendimento.
+
+Você pode verificar na agenda se ele está disponível e escolher o melhor horário direto no link."
+
+Se o lead sugerir um horário fora do comercial:
+"Esse horário fica fora do nosso atendimento, que acontece de segunda a sexta, das 08h às 18h.
+
+Para avançar, escolha um horário disponível direto no link da agenda."
+
+7. ETAPA: FOLLOW-UP PARA LEAD VIÁVEL QUE NÃO AGENDOU
+
+Objetivo:
+- manter constância;
+- recuperar leads mornos;
+- transformar hesitação em decisão.
+
+Dia 1:
+"Olá, [Nome]. Tudo bem?
+Pelo que você nos contou até aqui, o seu caso apresenta elementos que merecem análise jurídica.
+Se quiser avançar, posso te enviar o link da agenda para você escolher o melhor horário."
+
+Dia 2:
+"Olá, [Nome]. Passando para te reforçar:
+quanto antes a gente faz essa análise, mais cedo você entende se esse valor pode merecer revisão e quais medidas podem fazer sentido no seu caso.
+Quer que eu te envie o link da agenda?"
+
+Dia 3:
+"[Nome], esse tipo de reajuste tem acontecido com muita frequência.
+Em casos como o seu, a consulta serve para te dar clareza, segurança e um plano de ação bem objetivo.
+Seguimos com o agendamento?"
+
+Dia 4:
+"Posso te explicar resumidamente como funciona a consulta:
+é simples, sem juridiquês, e você já sai sabendo se compensa agir agora ou não.
+Faz sentido marcarmos para essa semana?"
+
+Dia 5:
+"[Nome], ficou alguma dúvida que eu possa esclarecer antes da consulta?
+Se preferir, posso te enviar o link da agenda e você escolhe o horário que fizer mais sentido."
+
+Dia 6:
+"Só para te tranquilizar:
+esse tipo de análise busca avaliar medidas para preservar seu plano e reduzir riscos durante a discussão.
+Quando podemos conversar com calma na consulta?"
+
+Dia 7:
+"[Nome], hoje estamos finalizando os horários dessa semana para análise de reajuste.
+Quer que eu te envie o link da agenda agora ou prefere que eu te procure em outro momento?"
+
+8. GATILHOS DE CONDUÇÃO PARA AGENDAMENTO
+
+Usar quando houver:
+- brecha positiva;
+- dúvida sobre como funciona;
+- medo de tomar a decisão errada;
+- urgência por aumento alto;
+- pedido de mais detalhes;
+- resposta vaga como "talvez", "acho que sim", "pode me explicar".
+
+Frases-gatilho prontas:
+- "Se quiser, eu já te envio o link da agenda."
+- "O próximo passo pode ser essa consulta para te dar clareza."
+- "Se fizer sentido para você, podemos avançar para a agenda."
+- "Você prefere que eu te envie o link agora?"
+- "Assim você consegue escolher o melhor horário para conversar com calma."
+
+9. BOAS PRÁTICAS
+
+- usar o nome do lead sempre que possível;
+- fazer mensagens curtas e naturais;
+- no máximo 2 perguntas por resposta;
+- terminar com uma próxima ação clara;
+- não usar juridiquês excessivo;
+- não prometer resultado;
+- não afirmar abusividade como certeza antes da análise;
+- falar em consulta, análise e próximo passo, nunca em fechar contrato;
+- depois que o lead agendar ou confirmar, parar de insistir com CTA de agenda.
