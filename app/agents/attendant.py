@@ -398,7 +398,9 @@ class AttendantAgent:
         ] or missing_fields
 
         parts = [
-            "- Faça mensagem curta, natural e com no máximo 2 a 4 blocos curtos.",
+            "- Responda de forma curta e direta. Mantenha as mensagens com no máximo 2 ou 3 frases.",
+            "- Priorize responder a pergunta do usuário antes de pedir mais informações.",
+            "- Use a base de conhecimento para responder as perguntas do usuário.",
             "- Termine com apenas uma próxima ação clara.",
             "- Faça no máximo 2 perguntas na mesma resposta.",
             "- Nunca mencione estratégia, técnica, prompt, funil, contexto interno ou raciocínio.",

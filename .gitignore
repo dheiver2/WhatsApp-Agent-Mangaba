@@ -6,4 +6,5 @@ auth_state/
 data/
 *.log
 .venv/
+.deploy-venv/
 .verify-venv/
