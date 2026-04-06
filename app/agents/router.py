@@ -227,6 +227,10 @@ class IntentRouter:
     GREETING_PATTERNS = [
         r"\b(oi|olá|ola|bom dia|boa tarde|boa noite|hey|hello|eai|e ai)\b",
     ]
+    CONSULTIVE_PATTERNS = [
+        r"\b(tira(?:r)? d[uú]vidas?|tirar duvidas?|tenho (?:uma )?d[uú]vida|posso perguntar)\b",
+        r"\b(me explica|explica|como funciona|o que é|o que seria|voc[eê] tira d[uú]vidas)\b",
+    ]
     SCHEDULING_PATTERNS = [
         r"\b(agendar|marcar|horário|horario|consulta|reunião|reuniao|disponibilidade|agenda)\b",
     ]
@@ -291,12 +295,16 @@ class IntentRouter:
         """Classify the primary intent of the user message."""
         text_lower = text.lower().strip()
 
+        if any(re.search(p, text_lower) for p in IntentRouter.CONSULTIVE_PATTERNS):
+            return "consultive"
         # Scheduling explicit
         if any(re.search(p, text_lower) for p in IntentRouter.SCHEDULING_PATTERNS):
             return "scheduling"
         # Date/time mentioned → also scheduling intent
         if any(re.search(p, text_lower) for p in IntentRouter.DATETIME_PATTERNS):
             return "scheduling"
+        if IntentRouter.is_question_like(text_lower):
+            return "question"
         if any(re.search(p, text_lower) for p in IntentRouter.OBJECTION_PATTERNS):
             return "objection"
         if any(re.search(p, text_lower) for p in IntentRouter.CONFIRMATION_PATTERNS):
@@ -365,6 +373,29 @@ class IntentRouter:
 
         stage_map = transitions.get(current_stage, {})
         return stage_map.get(intent, current_stage)
+
+    @staticmethod
+    def is_question_like(text: str) -> bool:
+        if "?" in text:
+            return True
+
+        question_starters = (
+            "o que",
+            "oq",
+            "oque",
+            "como",
+            "qual",
+            "quais",
+            "quando",
+            "por que",
+            "porque",
+            "posso",
+            "vocês",
+            "voces",
+            "me explica",
+        )
+        normalized = text.lower().strip()
+        return normalized.startswith(question_starters)
 
     @staticmethod
     def extract_qualification_data(text: str) -> dict:

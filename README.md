@@ -267,3 +267,27 @@ Para parar:
 ```powershell
 docker compose down
 ```
+
+## Deploy rápido no servidor
+
+Foi adicionado um script de deploy na raiz (`deploy.sh`) para enviar os arquivos ao servidor, atualizar o `docker-compose` e subir os containers.
+
+Uso com autenticação manual:
+
+```bash
+chmod +x deploy.sh
+./deploy.sh
+```
+
+Uso com senha via variável (requer `sshpass`):
+
+```bash
+DEPLOY_PASSWORD='sua_senha' ./deploy.sh
+```
+
+Variáveis opcionais:
+
+- `REMOTE_HOST` (padrão: `187.127.12.125`)
+- `REMOTE_USER` (padrão: `root`)
+- `REMOTE_PORT` (padrão: `22`)
+- `REMOTE_DIR` (padrão: `/root/whatsapp-agent`)

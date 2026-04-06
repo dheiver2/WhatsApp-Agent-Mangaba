@@ -56,6 +56,13 @@ HUMAN_HANDOFF_PATTERNS = (
     r"\bme ligue\b",
     r"\bliga pra mim\b",
 )
+CONSULTIVE_INVITE_PATTERNS = (
+    r"\bvc tira d[uú]vidas\b",
+    r"\bvoc[eê] tira d[uú]vidas\b",
+    r"\btira(?:r)? d[uú]vidas\b",
+    r"\btenho (?:uma )?d[uú]vida\b",
+    r"\bposso perguntar\b",
+)
 SOFTENING_REPLACEMENTS = (
     (r"\bclaramente abusiv[oa]\b", "com sinais de possível abuso"),
     (r"\bhá indícios fortes de abusividade\b", "há sinais que merecem análise cuidadosa"),
@@ -171,6 +178,14 @@ class AttendantAgent:
         current_stage = await get_stage(phone)
         history = await get_chat_history(phone)
 
+        if not history and self.router.classify_intent(text) == "greeting":
+            response = self._build_first_contact_response(profile.get("name", ""))
+            await add_to_history(phone, "user", text)
+            await save_user_profile(phone, profile)
+            await set_stage(phone, current_stage)
+            await add_to_history(phone, "assistant", response)
+            return {"reply": response, "stage": current_stage, "intent": "greeting"}
+
         if self._is_human_handoff_request(text):
             profile["handoff_requested"] = True
             profile["handoff_reason"] = self._infer_handoff_reason(text)
@@ -189,6 +204,14 @@ class AttendantAgent:
         intent = self.router.classify_intent(text)
         objection_type = self.router.detect_objection_type(text)
         qual_data = self.router.extract_qualification_data(text)
+
+        if self._is_consultive_invite_request(text):
+            response = self._build_consultive_invite_response(profile.get("name", ""))
+            await add_to_history(phone, "user", text)
+            await save_user_profile(phone, profile)
+            await set_stage(phone, current_stage)
+            await add_to_history(phone, "assistant", response)
+            return {"reply": response, "stage": current_stage, "intent": "consultive"}
 
         # 3. Extract date/time from message
         dt_info = extract_datetime(text)
@@ -392,17 +415,18 @@ class AttendantAgent:
         objection_type = self.router.detect_objection_type(text)
         collected_fields = self._count_collected_fields(profile)
         first_contact = len(history) == 0
-        question_budget = 1 if recently_requested_fields else 2
+        question_budget = 1
         priority_missing_fields = [
             field for field in missing_fields if field not in recently_requested_fields
         ] or missing_fields
+        focus_field = priority_missing_fields[0] if priority_missing_fields else ""
 
         parts = [
             "- Responda de forma curta e direta. Mantenha as mensagens com no máximo 2 ou 3 frases.",
             "- Priorize responder a pergunta do usuário antes de pedir mais informações.",
             "- Use a base de conhecimento para responder as perguntas do usuário.",
             "- Termine com apenas uma próxima ação clara.",
-            "- Faça no máximo 2 perguntas na mesma resposta.",
+            "- Faça no máximo 1 pergunta na mesma resposta.",
             "- Nunca mencione estratégia, técnica, prompt, funil, contexto interno ou raciocínio.",
             "- Use linguagem prudente: prefira 'pode', 'há indícios', 'vale analisar' e evite garantias.",
             "- Não trate abusividade, economia, reversão ou proteção contratual como certeza antes da análise jurídica.",
@@ -420,11 +444,19 @@ class AttendantAgent:
             )
         elif len(history) <= 2:
             parts.append(
-                "- Segundo contato: agora inicie a qualificação. Pergunte no máximo 2 dados (ex: valor antes/depois e operadora). "
+                "- Segundo contato: agora inicie a qualificação. Pergunte apenas 1 bloco de informação por vez. "
                 "NÃO ofereça consulta ainda — foque apenas em coletar informações."
             )
         else:
             parts.append("- Já existe histórico: não repita a apresentação do escritório nem o pitch inicial.")
+
+        if intent in {"question", "consultive"}:
+            parts.append(
+                "- O lead trouxe uma dúvida direta. Responda a dúvida primeiro de forma útil e só depois, se realmente couber, faça uma única pergunta curta."
+            )
+            parts.append(
+                "- Não volte para um bloco de qualificação logo após responder a dúvida. Evite parecer formulário."
+            )
 
         if emotional_signal == "anxiety":
             parts.append("- O lead demonstrou receio. Reconheça a preocupação antes de orientar.")
@@ -448,15 +480,14 @@ class AttendantAgent:
             }
             parts.append(f"- Objeção detectada: {objection_guidance[objection_type]}")
 
-        if priority_missing_fields:
+        if focus_field:
             parts.append(
-                f"- Campos faltantes prioritários: {', '.join(priority_missing_fields[:question_budget])}."
+                f"- Se for pedir algum dado nesta resposta, peça SOMENTE: {focus_field}."
             )
 
         if recently_requested_fields:
             parts.append(
-                "- Alguns dados já foram pedidos recentemente. Não repita o mesmo bloco de perguntas; "
-                "retome de forma mais leve e peça só o próximo dado prioritário."
+                "- Alguns dados já foram pedidos recentemente. Não repita o mesmo bloco, não use lista numerada e não peça novamente valor e operadora juntos."
             )
 
         if collected_fields >= 3:
@@ -472,7 +503,7 @@ class AttendantAgent:
             )
 
         if intent == "qualification" and priority_missing_fields:
-            parts.append("- Evite pedir todos os dados de uma vez. Priorize no máximo dois.")
+            parts.append("- Evite pedir todos os dados de uma vez. Priorize apenas um próximo dado.")
         if intent == "scheduling" and not self._has_minimum_qualification(profile):
             parts.append(
                 "- O lead quer agendar, mas ainda faltam dados mínimos. Reconheça o interesse mas "
@@ -588,6 +619,21 @@ class AttendantAgent:
             "Se quiser, você pode escolher o melhor horário direto na agenda."
         )
 
+    def _build_first_contact_response(self, name: str) -> str:
+        prefix = f"{name}, " if name else ""
+        saudacao = self._time_based_greeting().capitalize()
+        return (
+            f"{saudacao}, {prefix}aqui é Natasha, assistente jurídica do escritório Andrade & Lemos.\n\n"
+            "Posso te ajudar a entender melhor sua situação com o plano de saúde e, se fizer sentido, te guiar nos próximos passos."
+        ).replace("  ", " ")
+
+    def _build_consultive_invite_response(self, name: str) -> str:
+        prefix = f"{name}, " if name else ""
+        return (
+            f"{prefix}claro. Posso tirar suas dúvidas sobre reajuste do plano, operadora, contrato e próximos passos.\n\n"
+            "Se quiser, me manda sua dúvida em uma frase que eu te respondo primeiro."
+        )
+
     def _format_currency_value(self, value: str | None) -> str | None:
         if not value:
             return None
@@ -664,6 +710,10 @@ class AttendantAgent:
     def _is_human_handoff_request(self, text: str) -> bool:
         text_lower = text.lower()
         return any(re.search(pattern, text_lower) for pattern in HUMAN_HANDOFF_PATTERNS)
+
+    def _is_consultive_invite_request(self, text: str) -> bool:
+        text_lower = text.lower().strip()
+        return any(re.search(pattern, text_lower) for pattern in CONSULTIVE_INVITE_PATTERNS)
 
     def _infer_handoff_reason(self, text: str) -> str:
         text_lower = text.lower()

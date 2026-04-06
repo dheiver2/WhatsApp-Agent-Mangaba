@@ -14,6 +14,7 @@ const path = require("path");
 
 const API_URL = process.env.WHATSAPP_API_URL || "http://localhost:8000";
 const QR_PORT = parseInt(process.env.QR_SERVER_PORT || "3001");
+const INBOUND_DEBOUNCE_MS = parseInt(process.env.WHATSAPP_INBOUND_DEBOUNCE_MS || "1500", 10);
 const AUTH_DIR = path.join(__dirname, "auth_state");
 const logger = pino({ level: "warn" });
 
@@ -21,6 +22,7 @@ let currentQR = null;
 let connectionStatus = "disconnected";
 let sock = null;
 const chatQueues = new Map();
+const inboundBuffers = new Map();
 
 // ── QR Code Web Server ──────────────────────────────────────────────
 const app = express();
@@ -191,52 +193,12 @@ async function connectWhatsApp() {
       const pushName = msg.pushName || "";
 
       tasks.push(
-        enqueueChatTask(sender, async () => {
-          console.log(`[Message] ${pushName} (${sender}): ${text}`);
-
-          await sock.presenceSubscribe(sender);
-          await sock.sendPresenceUpdate("composing", sender);
-
-          try {
-            const response = await axios.post(
-              `${API_URL}/api/v1/message`,
-              {
-                phone: sender,
-                name: pushName,
-                text: text,
-                message_id: msg.key.id,
-                timestamp: msg.messageTimestamp,
-              },
-              { timeout: 60000 }
-            );
-
-            await sock.sendPresenceUpdate("paused", sender);
-
-            if (response.data?.duplicate) {
-              return;
-            }
-
-            if (response.data?.reply) {
-              const replies = splitMessage(response.data.reply);
-              for (const part of replies) {
-                await sock.sendPresenceUpdate("composing", sender);
-                await delay(Math.min(part.length * 30, 3000));
-                await sock.sendMessage(sender, { text: part });
-                await sock.sendPresenceUpdate("paused", sender);
-              }
-            }
-          } catch (err) {
-            const apiDetail =
-              err.response?.data?.detail ||
-              err.response?.data?.error ||
-              err.response?.data ||
-              err.message;
-            console.error("[API Error]", apiDetail);
-            await sock.sendPresenceUpdate("paused", sender);
-            await sock.sendMessage(sender, {
-              text: "Desculpe, estou com uma instabilidade no momento. Já já te respondo! 😊",
-            });
-          }
+        queueInboundMessage({
+          sender,
+          pushName,
+          text,
+          messageId: msg.key.id,
+          timestamp: msg.messageTimestamp,
         })
       );
     }
@@ -260,6 +222,124 @@ function enqueueChatTask(chatId, task) {
   });
   chatQueues.set(chatId, tracked);
   return tracked;
+}
+
+function queueInboundMessage({ sender, pushName, text, messageId, timestamp }) {
+  if (!sender || !text.trim()) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    const existing = inboundBuffers.get(sender);
+    const entry = existing || {
+      sender,
+      pushName,
+      texts: [],
+      messageIds: [],
+      timestamp,
+      resolvers: [],
+      timer: null,
+    };
+
+    if (entry.timer) {
+      clearTimeout(entry.timer);
+    }
+
+    entry.pushName = pushName || entry.pushName;
+    entry.texts.push(text.trim());
+    if (messageId) {
+      entry.messageIds.push(messageId);
+    }
+    if (timestamp) {
+      entry.timestamp = timestamp;
+    }
+    entry.resolvers.push(resolve);
+    entry.timer = setTimeout(() => {
+      flushInboundMessage(sender).catch((err) => {
+        console.error("[Inbound Buffer Error]", err.message);
+      });
+    }, INBOUND_DEBOUNCE_MS);
+
+    inboundBuffers.set(sender, entry);
+  });
+}
+
+async function flushInboundMessage(sender) {
+  const entry = inboundBuffers.get(sender);
+  if (!entry) {
+    return;
+  }
+
+  inboundBuffers.delete(sender);
+  const combinedText = collapseSequentialMessages(entry.texts);
+  const messageId = entry.messageIds.filter(Boolean).join(",") || `buffered:${Date.now()}`;
+
+  try {
+    await enqueueChatTask(sender, async () => {
+      console.log(`[Message] ${entry.pushName} (${sender}): ${combinedText}`);
+
+      await sock.presenceSubscribe(sender);
+      await sock.sendPresenceUpdate("composing", sender);
+
+      try {
+        const response = await axios.post(
+          `${API_URL}/api/v1/message`,
+          {
+            phone: sender,
+            name: entry.pushName,
+            text: combinedText,
+            message_id: messageId,
+            timestamp: entry.timestamp,
+          },
+          { timeout: 60000 }
+        );
+
+        await sock.sendPresenceUpdate("paused", sender);
+
+        if (response.data?.duplicate) {
+          return;
+        }
+
+        if (response.data?.reply) {
+          const replies = splitMessage(response.data.reply);
+          for (const part of replies) {
+            await sock.sendPresenceUpdate("composing", sender);
+            await delay(Math.min(part.length * 30, 3000));
+            await sock.sendMessage(sender, { text: part });
+            await sock.sendPresenceUpdate("paused", sender);
+          }
+        }
+      } catch (err) {
+        const apiDetail =
+          err.response?.data?.detail ||
+          err.response?.data?.error ||
+          err.response?.data ||
+          err.message;
+        console.error("[API Error]", apiDetail);
+        await sock.sendPresenceUpdate("paused", sender);
+        await sock.sendMessage(sender, {
+          text: "Desculpe, estou com uma instabilidade no momento. Já já te respondo! 😊",
+        });
+      }
+    });
+  } finally {
+    for (const resolve of entry.resolvers) {
+      resolve();
+    }
+  }
+}
+
+function collapseSequentialMessages(messages) {
+  const parts = [];
+  for (const message of messages) {
+    const trimmed = (message || "").trim();
+    if (!trimmed) continue;
+    if (parts.length && parts[parts.length - 1].toLowerCase() === trimmed.toLowerCase()) {
+      continue;
+    }
+    parts.push(trimmed);
+  }
+  return parts.join("\n");
 }
 
 function splitMessage(text, maxLen = 1200) {
