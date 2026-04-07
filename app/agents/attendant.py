@@ -428,6 +428,7 @@ class AttendantAgent:
             "- Termine com apenas uma próxima ação clara.",
             "- Faça no máximo 1 pergunta na mesma resposta.",
             "- Evite listas, blocos longos e texto explicativo demais.",
+            "- Soe como conversa real de WhatsApp. Prefira frases simples e coloquiais.",
             "- Nunca mencione estratégia, técnica, prompt, funil, contexto interno ou raciocínio.",
             "- Use linguagem prudente: prefira 'pode', 'há indícios', 'vale analisar' e evite garantias.",
             "- Não trate abusividade, economia, reversão ou proteção contratual como certeza antes da análise jurídica.",
@@ -570,17 +571,18 @@ class AttendantAgent:
     def _build_out_of_hours_response(self, name: str, slot_suggestions: list[str]) -> str:
         prefix = f"{name}, " if name else ""
         return (
-            f"{prefix}esse horário fica fora do nosso atendimento, que acontece de segunda a "
-            f"sexta, das {BUSINESS_HOUR_START:02d}h às {BUSINESS_HOUR_END:02d}h.\n\n"
-            "Para avançar, escolha um horário disponível direto no link da agenda abaixo."
+            f"{prefix}esse horário fica fora do nosso atendimento.\n"
+            f"Aqui atendemos de segunda a sexta, das {BUSINESS_HOUR_START:02d}h às {BUSINESS_HOUR_END:02d}h.\n"
+            "Se quiser, eu te envio a agenda para escolher um horário disponível."
         )
 
     def _build_in_hours_scheduling_response(self, name: str, dt_info: DateTimeInfo) -> str:
         prefix = f"{name}, " if name else ""
         selected = dt_info.format_display()
         return (
-            f"{prefix}esse horário está dentro do nosso atendimento.\n\n"
-            f"Você pode verificar na agenda se {selected} está disponível e escolher o melhor horário direto no link abaixo."
+            f"{prefix}esse horário está dentro do nosso atendimento.\n"
+            f"Você pode ver se {selected} está livre na agenda.\n"
+            "Se quiser, eu te mando o link."
         )
 
     def _build_offer_consulta_response(
@@ -604,37 +606,34 @@ class AttendantAgent:
         context = ", ".join(context_bits)
 
         return (
-            f"{prefix}com base no que você me contou sobre o {context}, esse reajuste merece "
-            "uma análise cuidadosa.\n\n"
-            "Na consulta, o Dr. Filipe pode verificar se esse aumento pode ser questionado "
-            "e quais caminhos podem fazer sentido no seu caso.\n\n"
-            "Se quiser avançar, escolha o melhor horário direto na agenda."
+            f"{prefix}pelo que você me contou sobre o {context}, esse reajuste merece uma análise cuidadosa.\n"
+            "Na consulta, o Dr. Filipe pode te explicar os caminhos possíveis no seu caso.\n"
+            "Se quiser avançar, eu te mando a agenda."
         )
 
     def _build_cancellation_fear_response(self, name: str, slot_suggestions: list[str]) -> str:
         prefix = f"{name}, " if name else ""
         return (
-            f"{prefix}esse receio é comum, e o mais prudente é analisar o caso antes de qualquer medida.\n\n"
-            "Na consulta, o Dr. Filipe pode explicar quais caminhos costumam ser usados para "
-            "preservar o contrato e reduzir riscos durante a discussão do reajuste.\n\n"
-            "Se quiser, você pode escolher o melhor horário direto na agenda."
+            f"{prefix}esse receio é bem comum.\n"
+            "O mais prudente é analisar seu caso antes de qualquer passo.\n"
+            "Se quiser, eu te mando a agenda para falar com o Dr. Filipe."
         )
 
     def _build_first_contact_response(self, name: str) -> str:
         prefix = f"{name}, " if name else ""
         saudacao = self._time_based_greeting().capitalize()
         return (
-            f"{saudacao}, {prefix}aqui é Natasha, assistente jurídica do escritório Andrade & Lemos.\n"
-            "Posso te ajudar a entender sua situação com o plano de saúde.\n"
-            "Se fizer sentido, eu te guio nos próximos passos."
+            f"{saudacao}, {prefix}aqui é Natasha, do escritório Andrade & Lemos.\n"
+            "Posso te ajudar a entender o que aconteceu com seu plano.\n"
+            "Me conta o que aconteceu."
         ).replace("  ", " ")
 
     def _build_consultive_invite_response(self, name: str) -> str:
         prefix = f"{name}, " if name else ""
         return (
-            f"{prefix}claro. Posso tirar sua dúvida sobre reajuste, contrato e próximos passos.\n"
-            "Me manda sua pergunta em uma frase.\n"
-            "Eu te respondo primeiro e depois sigo com você."
+            f"{prefix}sim, claro.\n"
+            "Me manda sua dúvida do jeito que ficar mais fácil.\n"
+            "Eu te respondo primeiro."
         )
 
     def _format_currency_value(self, value: str | None) -> str | None:
