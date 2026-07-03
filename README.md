@@ -3,6 +3,7 @@
 
   [![Mangaba AI](https://img.shields.io/badge/Mangaba-AI-F97518?style=for-the-badge)](https://www.mangaba.ia.br)
   [![Site](https://img.shields.io/badge/mangaba.ia.br-1E0D01?style=for-the-badge)](https://www.mangaba.ia.br)
+  [![CI](https://github.com/dheiver2/mangaba-whatsapp-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/dheiver2/mangaba-whatsapp-agent/actions/workflows/ci.yml)
 </div>
 
 # WhatsApp Agent
@@ -260,6 +261,51 @@ npm run dev
 
 Depois abra `http://localhost:3001`.
 
+## Execução em Linux / macOS (sem Docker)
+
+O passo a passo acima é o oficial (Windows + WSL), mas o projeto roda igual em Linux/macOS nativos — sem WSL, trocando o PowerShell por um shell POSIX.
+
+### 1. Redis
+
+macOS (Homebrew):
+
+```bash
+brew install redis
+brew services start redis
+```
+
+Linux (Debian/Ubuntu):
+
+```bash
+sudo apt-get install redis-server
+sudo systemctl start redis-server
+```
+
+Valide com `redis-cli ping` (esperado: `PONG`).
+
+### 2. API Python
+
+```bash
+cd whatsapp-agent
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env   # preencha OPENROUTER_API_KEY e demais variáveis
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+### 3. Serviço do WhatsApp
+
+Em outro terminal:
+
+```bash
+cd whatsapp-agent/whatsapp-service
+npm install
+npm run dev
+```
+
+A validação (health check, dashboard, QR Code, endpoints) é a mesma descrita na seção [Validação](#validação) acima.
+
 ## Execução com Docker
 
 Se quiser subir tudo com Docker:
@@ -274,6 +320,15 @@ Para parar:
 ```powershell
 docker compose down
 ```
+
+## CI
+
+O workflow em `.github/workflows/ci.yml` roda a cada push/PR na `main` e faz apenas smoke checks (sem subir Redis, WhatsApp ou depender de rede externa):
+
+- **python-backend**: instala `requirements.txt` e compila (`py_compile`) todos os módulos em `app/` e `scripts/`
+- **node-whatsapp-service**: instala as dependências de `whatsapp-service/` com `npm ci` e valida a sintaxe de `index.js` (`node --check`)
+
+Não há testes automatizados nem lint configurado no repositório ainda; o CI garante apenas que as dependências instalam e que o código não tem erro de sintaxe.
 
 ## Deploy rápido no servidor
 
